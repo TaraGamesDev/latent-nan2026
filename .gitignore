@@ -4,3 +4,10 @@ node_modules/
 .vite/
 dist/
 tune-output/
+
+# 3D asset pipeline: the Blender scripts and the four preview renders are the
+# record; the intermediate renders, sweeps and source generations are not.
+assets/blender/_probe_*.py
+assets/textures/
+assets/models/*.glb
+assets/scratch/

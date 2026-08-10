@@ -10,6 +10,7 @@ import { HOLDERS, isReachable } from './core/plates';
 import { rankTurns } from './ai/solver';
 import { createGame, dangerOfGame, tap, type GameState } from './game/game';
 import { WallScene } from './ui/scene';
+import { loadAssets } from './ui/assets';
 import { DirectorPanel } from './ui/panel';
 
 const $ = <T extends HTMLElement>(id: string): T => {
@@ -19,8 +20,12 @@ const $ = <T extends HTMLElement>(id: string): T => {
 };
 
 const canvas = $<HTMLCanvasElement>('board');
-const scene = new WallScene(canvas);
 const panel = new DirectorPanel($('panel-body'));
+
+// The parts are real models, so the first frame has to wait for them. It is a
+// couple of hundred kilobytes and the hint line says what is happening, which is
+// better than a blank canvas.
+const scene = new WallScene(canvas, await loadAssets());
 
 const els = {
   score: $('score'),

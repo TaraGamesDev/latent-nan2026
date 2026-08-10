@@ -20,7 +20,6 @@
 import {
   ACESFilmicToneMapping,
   AmbientLight,
-  CylinderGeometry,
   DirectionalLight,
   Group,
   MathUtils,
@@ -34,15 +33,21 @@ import {
   Raycaster,
   Scene,
   SRGBColorSpace,
-  TorusGeometry,
   RepeatWrapping,
   CanvasTexture,
   Vector2,
   Vector3,
   WebGLRenderer,
 } from 'three';
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
+
+import {
+  type Assets,
+  instance,
+  meshOf,
+  nineSlice,
+  replaceMaterial,
+} from './assets';
 
 import { type Board, type Colour, HOLDERS, HOLDER_CAPACITY, UNDECIDED } from '../core/plates';
 
@@ -55,10 +60,27 @@ export const COLOUR_HEX = [
 /** Board units are about one plate-corner apart; scale up so a screw is a
  *  comfortable thumb target rather than a speck. */
 const S = 1.55;
+/** Plate thickness, matching assets/blender/plate.py. */
 const PLATE_T = 0.26;
 const LAYER_GAP = 0.34;
-const SCREW_R = 0.23;
 const HOLD_DROP = 1.9;
+/** Distance between the holder's three wells. Fixed by holder.glb, so the game
+ *  must use the model's number rather than deriving one from the wall width. */
+const WELL_PITCH = 0.576;
+/** Sits a part a hair proud of the surface below it, out of the z-fight zone. */
+const EPS = 0.005;
+/** The modelled screw is engineering-accurate, which reads small on a phone.
+ *  Games in this genre draw a deliberately chunky screw; this is that. */
+const SCREW_SCALE = 1.34;
+/**
+ * How much of the bolt hole's depth survives.
+ *
+ * The plate's front face is solid, so a full-depth bore is simply hidden behind
+ * it and the hole flattens into a ring. Compressing the model along its axis
+ * brings its dark floor forward of the plate face, so the recess reads as a
+ * recess. It is a cheat, and it is invisible.
+ */
+const HOLE_SQUASH = 0.16;
 
 /**
  * A brushed-steel roughness map, drawn at runtime on a 2D canvas.
@@ -130,7 +152,10 @@ export class WallScene {
   private wallH = 6;
   private centreY = 0;
 
-  constructor(private canvas: HTMLCanvasElement) {
+  constructor(
+    private canvas: HTMLCanvasElement,
+    private assets: Assets,
+  ) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
     this.renderer.outputColorSpace = SRGBColorSpace;
@@ -170,9 +195,12 @@ export class WallScene {
 
     const brushed = brushedRoughness();
     this.steel = new MeshStandardMaterial({
-      color: 0x767f8e,
-      metalness: 0.86,
-      roughness: 0.46,
+      color: 0x6f7887,
+      // Rougher than the earlier procedural plate. The modelled plate has a real
+      // rim and groove catching the key light, so it no longer needs a mirror
+      // finish to look like metal — and a mirror finish blew the top half out.
+      metalness: 0.82,
+      roughness: 0.58,
       roughnessMap: brushed,
     });
     this.steelEdge = new MeshStandardMaterial({
@@ -186,6 +214,7 @@ export class WallScene {
     // An undecided screw is raw, unfinished metal. Nothing is being concealed —
     // there is no colour there yet.
     this.blank = new MeshStandardMaterial({ color: 0x707a8c, metalness: 0.55, roughness: 0.78 });
+    this.blank.name = 'ScrewHead';
 
     // A backing wall so plates cast onto something and the stack reads deep.
     const back = new Mesh(
@@ -195,6 +224,18 @@ export class WallScene {
     back.position.z = -2.2;
     back.receiveShadow = true;
     this.scene.add(back);
+
+    /*
+     * The models ship with their own materials, but the palette lives here.
+     * Overriding by slot name at load time keeps the look decided in one place
+     * rather than split between a Blender script and a renderer, and keeps the
+     * brushed-steel map, the metalness and the deliberately dim environment
+     * consistent with one another.
+     */
+    replaceMaterial(assets.plate, 'PlateSteel', this.steel);
+    replaceMaterial(assets.holder, 'HolderBody', this.steelEdge);
+    replaceMaterial(assets.holder, 'HolderWell', this.hole);
+    replaceMaterial(assets.screw, 'ScrewMetal', this.shaftMat);
 
     this.scene.add(this.plateGroup, this.screwGroup, this.holderGroup);
 
@@ -212,6 +253,8 @@ export class WallScene {
         metalness: 0.45,
         roughness: 0.28,
       });
+      // Keeps the glTF slot's name, so a later swap can still find it.
+      m.name = 'ScrewHead';
       this.colourMats.set(colour, m);
     }
     return m;
@@ -242,7 +285,13 @@ export class WallScene {
       const h = p.h * S - 0.1;
       const [cx, cy] = world(p.x + p.w / 2, p.y + p.h / 2);
 
-      const body = new Mesh(new RoundedBoxGeometry(w, h, PLATE_T, 4, 0.11), this.steel);
+      // One modelled plate, stretched to this plate's rectangle by translating
+      // its border. The bevel, rim band and groove keep their real width at
+      // every size, which scaling would not preserve.
+      const body = new Mesh(
+        nineSlice(meshOf(this.assets.plate).geometry, w, h, this.assets.plateHalf),
+        this.steel,
+      );
       body.castShadow = true;
       body.receiveShadow = true;
       g.add(body);
@@ -252,12 +301,9 @@ export class WallScene {
       for (const id of p.screws) {
         const s = board.screws[id];
         const [sx, sy] = world(s.x, s.y);
-        const ring = new Mesh(
-          new CylinderGeometry(SCREW_R * 1.14, SCREW_R * 1.14, PLATE_T * 0.62, 20),
-          this.hole,
-        );
-        ring.rotation.x = Math.PI / 2;
-        ring.position.set(sx - cx, sy - cy, PLATE_T * 0.3);
+        const ring = instance(this.assets.hole);
+        ring.scale.z = HOLE_SQUASH;
+        ring.position.set(sx - cx, sy - cy, PLATE_T / 2 + EPS);
         g.add(ring);
       }
 
@@ -286,69 +332,47 @@ export class WallScene {
     this.resize();
   }
 
-  /** Hex head, sunk driver socket, washer, and a shaft that shows as it backs out. */
+  /**
+   * A screw, cloned from the model.
+   *
+   * Only the head takes the colour. The glTF mesh carries an array of two
+   * materials, so the head slot has to be written by name — assigning to
+   * `mesh.material` would replace the whole array and paint the thread and the
+   * driver recess the same colour as the head.
+   */
   private makeScrew(): Group {
-    const g = new Group();
-
-    const head = new Mesh(new CylinderGeometry(SCREW_R, SCREW_R * 0.88, 0.19, 6), this.steel);
-    head.rotation.x = Math.PI / 2;
-    head.position.z = 0.15;
-    head.castShadow = true;
-    g.add(head);
-
-    // A hex socket sunk into the head — the detail that says "a driver goes here".
-    const socket = new Mesh(new CylinderGeometry(SCREW_R * 0.46, SCREW_R * 0.46, 0.07, 6), this.hole);
-    socket.rotation.x = Math.PI / 2;
-    socket.position.z = 0.225;
-    g.add(socket);
-
-    const washer = new Mesh(new TorusGeometry(SCREW_R * 1.1, 0.042, 8, 22), this.steelEdge);
-    washer.position.z = 0.05;
-    g.add(washer);
-
-    const shaft = new Mesh(new CylinderGeometry(SCREW_R * 0.5, SCREW_R * 0.44, 0.5, 12), this.shaftMat);
-    shaft.rotation.x = Math.PI / 2;
-    shaft.position.z = -0.2;
-    g.add(shaft);
-
-    g.userData.head = head;
+    const g = instance(this.assets.screw);
+    g.scale.setScalar(SCREW_SCALE);
     return g;
   }
 
+  /** Paint one screw's head, leaving its steel parts alone. */
+  private paintScrew(g: Group, colour: Colour): void {
+    replaceMaterial(g, 'ScrewHead', this.matFor(colour));
+  }
+
   private buildHolders(wallH: number): void {
-    const spacing = Math.max(2.4, this.spanX / HOLDERS);
+    // The tray is a fixed-size model now, so this only controls the gaps between
+    // the three of them. The distance between wells comes from the model.
+    const spacing = Math.max(2.5, this.spanX / HOLDERS);
     const startX = -((HOLDERS - 1) * spacing) / 2;
     const y = -wallH / 2 - HOLD_DROP;
-    const pitch = spacing * 0.24;
 
     for (let i = 0; i < HOLDERS; i++) {
       const slot = new Group();
       slot.position.set(startX + i * spacing, y, 0.6);
-      slot.userData.pitch = pitch;
-
-      const tray = new Mesh(
-        new RoundedBoxGeometry(spacing * 0.84, 0.92, 0.34, 4, 0.13),
-        this.steelEdge,
-      );
-      tray.receiveShadow = true;
-      tray.castShadow = true;
-      slot.add(tray);
+      slot.userData.pitch = WELL_PITCH;
+      slot.add(instance(this.assets.holder));
 
       for (let k = 0; k < HOLDER_CAPACITY; k++) {
-        // The empty well stays visible, so remaining room can be counted at a
-        // glance instead of read off a number.
-        const well = new Mesh(new CylinderGeometry(SCREW_R * 1.28, SCREW_R * 1.28, 0.12, 20), this.hole);
-        well.rotation.x = Math.PI / 2;
-        well.position.set((k - 1) * pitch, 0, 0.16);
-        slot.add(well);
-
-        const cap = new Mesh(new CylinderGeometry(SCREW_R, SCREW_R * 0.88, 0.17, 6), this.steel);
-        cap.rotation.x = Math.PI / 2;
-        cap.position.set((k - 1) * pitch, 0, 0.24);
-        cap.visible = false;
-        cap.castShadow = true;
-        cap.userData.socket = k;
-        slot.add(cap);
+        // A real screw standing in the well, not a stand-in cap. Its shaft runs
+        // back through the tray, which is opaque and face-on to the camera.
+        const seated = instance(this.assets.screw);
+        seated.scale.setScalar(SCREW_SCALE);
+        seated.position.set((k - 1) * WELL_PITCH, 0, -0.02 + EPS);
+        seated.visible = false;
+        seated.userData.socket = k;
+        slot.add(seated);
       }
 
       this.holderGroup.add(slot);
@@ -374,7 +398,7 @@ export class WallScene {
       g.visible = true;
       // While a reveal is playing the head deliberately stays raw metal, so the
       // player watches the colour get decided instead of finding it already set.
-      if (!g.userData.revealing) (g.userData.head as Mesh).material = this.matFor(s.colour);
+      if (!g.userData.revealing) this.paintScrew(g, s.colour);
     }
 
     for (let i = 0; i < HOLDERS; i++) {
@@ -386,7 +410,7 @@ export class WallScene {
         if (k === undefined) continue;
         const filled = h.colour !== UNDECIDED && k < h.count;
         child.visible = filled;
-        if (filled) (child as Mesh).material = this.matFor(h.colour);
+        if (filled) this.paintScrew(child as Group, h.colour);
       }
     }
   }
@@ -470,6 +494,7 @@ export class WallScene {
       () => {
         g.visible = false;
         g.userData.leaving = false;
+        g.scale.setScalar(SCREW_SCALE);
         g.rotation.z = 0;
         g.position.copy(g.userData.home as Vector3);
       },
@@ -514,8 +539,7 @@ export class WallScene {
   animateReveal(screwId: number, colour: Colour): void {
     const g = this.screwObjects.get(screwId);
     if (!g) return;
-    const head = g.userData.head as Mesh;
-    head.material = this.blank;
+    replaceMaterial(g, 'ScrewHead', this.blank);
     g.userData.revealing = true;
     let swapped = false;
 
@@ -523,19 +547,19 @@ export class WallScene {
       780,
       (k) => {
         if (!swapped && k > 0.55) {
-          head.material = this.matFor(colour);
+          this.paintScrew(g, colour);
           swapped = true;
         }
         if (k > 0.55) {
           const t = (k - 0.55) / 0.45;
-          g.scale.setScalar(1 + Math.sin(t * Math.PI) * 0.38);
+          g.scale.setScalar(SCREW_SCALE * (1 + Math.sin(t * Math.PI) * 0.38));
           g.rotation.z = Math.sin(t * Math.PI * 2) * 0.55;
         }
       },
       () => {
-        head.material = this.matFor(colour);
+        this.paintScrew(g, colour);
         g.userData.revealing = false;
-        g.scale.setScalar(1);
+        g.scale.setScalar(SCREW_SCALE);
         g.rotation.z = 0;
       },
     );
@@ -590,7 +614,7 @@ export class WallScene {
       if (!g.visible || g.userData.leaving || g.userData.revealing) continue;
       const hl = this.highlighted.has(id) ? 0.1 + 0.05 * Math.sin(now / 200) : 0;
       const hover = this.hovered === id ? 0.14 : 0;
-      g.scale.setScalar(1 + hl + hover);
+      g.scale.setScalar(SCREW_SCALE * (1 + hl + hover));
     }
 
     this.renderer.render(this.scene, this.camera);
