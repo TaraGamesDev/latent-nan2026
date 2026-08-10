@@ -2,149 +2,159 @@
  * Headless smoke test and engine benchmark.
  *
  * Runs full games through the real `tap()` path with scripted players, so a
- * regression in the rules, the solver or the director shows up here before it
+ * regression in the rules, the solver or the assigner shows up here before it
  * shows up in someone's hands. Three things are asserted, not just reported:
  *
- *   1. the playability invariant holds on every tap of every run,
- *   2. every run terminates - a competent player must not be immortal,
+ *   1. the completability invariant holds — every face ever assigned can still
+ *      be brought to a multiple of three,
+ *   2. runs end, and better players get further,
  *   3. theta ranks the scripted players in the order they deserve.
  *
  *   npm run bench
  */
 
-import { legalMoves } from '../core/grid';
+import { MATCH } from '../core/tiles';
 import { makeRng } from '../core/rng';
 import { PERSONAS, type PersonaName, chooseTap, thinkTime } from '../ai/bots';
+import { debtOf } from '../ai/assigner';
+import { statsOf } from '../ai/solver';
 import { createGame, tap } from '../game/game';
 
-type PlayerKind = PersonaName;
-const KINDS: PlayerKind[] = ['novice', 'casual', 'expert'];
-
-interface RunResult {
-  score: number;
-  taps: number;
-  exits: number;
-  jams: number;
-  bestCombo: number;
-  theta: number;
-  invariantBreaches: number;
-  reducedBudgets: number;
-  terminated: boolean;
-  maxTapMs: number;
-  totalTapMs: number;
-}
-
+const KINDS: PersonaName[] = ['novice', 'casual', 'expert'];
 const STEP_CAP = 3000;
 
-function playOne(kind: PlayerKind, seed: number): RunResult {
+interface RunResult {
+  levels: number;
+  score: number;
+  taps: number;
+  matches: number;
+  theta: number;
+  meanSingles: number;
+  maxTray: number;
+  breaches: number;
+  terminated: boolean;
+  totalMs: number;
+}
+
+function playOne(kind: PersonaName, seed: number): RunResult {
   const rng = makeRng(seed ^ 0x9e3779b9);
   const g = createGame(seed, 0);
-  let invariantBreaches = 0;
-  let reducedBudgets = 0;
-  let maxTapMs = 0;
-  let totalTapMs = 0;
+  const persona = PERSONAS[kind];
   let clock = 0;
+  let breaches = 0;
+  let singlesSum = 0;
+  let maxTray = 0;
   let terminated = false;
+  let totalMs = 0;
 
   for (let step = 0; step < STEP_CAP; step++) {
     if (g.over) {
       terminated = true;
       break;
     }
-    const persona = PERSONAS[kind];
-    const cell = chooseTap(g.grid, persona, rng);
-    if (cell === null) {
+    const id = chooseTap(g.board, persona, rng);
+    if (id === null) {
       terminated = true;
       break;
     }
-
-    // Scripted players "think" for a plausible amount of time so the tempo
-    // component of the skill estimate is exercised rather than sitting at zero.
     clock += thinkTime(persona, rng);
 
     const t0 = performance.now();
-    const res = tap(g, cell, clock);
-    const dt = performance.now() - t0;
-    totalTapMs += dt;
-    if (dt > maxTapMs) maxTapMs = dt;
+    tap(g, id, clock);
+    totalMs += performance.now() - t0;
 
-    if (res.decision) {
-      if (res.decision.reducedBudget) reducedBudgets++;
-      // The invariant: whenever the director reports the board playable, it
-      // must actually be playable.
-      if (res.decision.playable && legalMoves(g.grid).length < 1) invariantBreaches++;
-    }
+    // The invariant: enough undecided tiles remain to close every open face.
+    if (g.board.undecided < debtOf(g.ledger)) breaches++;
+
+    const s = statsOf(g.board);
+    singlesSum += s.singles;
+    if (g.board.tray.length > maxTray) maxTray = g.board.tray.length;
   }
 
   return {
+    levels: g.cleared,
     score: g.score,
     taps: g.taps,
-    exits: g.exits,
-    jams: g.jams,
-    bestCombo: g.bestCombo,
+    matches: g.matches,
     theta: g.skill.theta,
-    invariantBreaches,
-    reducedBudgets,
+    meanSingles: g.taps === 0 ? 0 : singlesSum / g.taps,
+    maxTray,
+    breaches,
     terminated,
-    maxTapMs,
-    totalTapMs,
+    totalMs,
   };
 }
 
 const mean = (xs: number[]): number => xs.reduce((a, b) => a + b, 0) / Math.max(1, xs.length);
 const pct = (xs: number[], p: number): number => {
-  const sorted = [...xs].sort((a, b) => a - b);
-  return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
+  const s = [...xs].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(p * s.length))];
 };
 
-const RUNS = 60;
-
-console.log(`CADENCE engine bench - ${RUNS} runs per player\n`);
+const RUNS = 50;
+console.log(`LATENT engine bench - ${RUNS} runs per player\n`);
 console.log(
-  ['player', 'score', 'taps', 'p10', 'p90', 'exits', 'jams', 'combo', 'theta', 'shrink', 'ms/tap', 'maxms']
+  ['player', 'levels', 'p10', 'p90', 'score', 'taps', 'matches', 'singles', 'maxTray', 'theta', 'ms/tap']
     .map((h) => h.padStart(8))
     .join(''),
 );
 
 let breaches = 0;
 let immortal = 0;
-const thetaByKind: Record<string, number> = {};
+const endedByKind: Record<string, number> = {};
+const theta: Record<string, number> = {};
+const levels: Record<string, number> = {};
 
 for (const kind of KINDS) {
   const runs = Array.from({ length: RUNS }, (_, i) => playOne(kind, 1000 + i * 7919));
-  breaches += runs.reduce((a, r) => a + r.invariantBreaches, 0);
+  breaches += runs.reduce((a, r) => a + r.breaches, 0);
   immortal += runs.filter((r) => !r.terminated).length;
-  const taps = runs.map((r) => r.taps);
-  thetaByKind[kind] = mean(runs.map((r) => r.theta));
+  endedByKind[kind] = runs.filter((r) => r.terminated).length;
+  theta[kind] = mean(runs.map((r) => r.theta));
+  levels[kind] = mean(runs.map((r) => r.levels));
+  const lv = runs.map((r) => r.levels);
 
   console.log(
     [
       kind,
+      levels[kind].toFixed(2),
+      pct(lv, 0.1).toFixed(0),
+      pct(lv, 0.9).toFixed(0),
       mean(runs.map((r) => r.score)).toFixed(0),
-      mean(taps).toFixed(1),
-      pct(taps, 0.1).toFixed(0),
-      pct(taps, 0.9).toFixed(0),
-      mean(runs.map((r) => r.exits)).toFixed(1),
-      mean(runs.map((r) => r.jams)).toFixed(1),
-      mean(runs.map((r) => r.bestCombo)).toFixed(1),
-      thetaByKind[kind].toFixed(3),
-      mean(runs.map((r) => r.reducedBudgets)).toFixed(1),
-      (mean(runs.map((r) => r.totalTapMs)) / Math.max(1, mean(taps))).toFixed(2),
-      Math.max(...runs.map((r) => r.maxTapMs)).toFixed(1),
+      mean(runs.map((r) => r.taps)).toFixed(0),
+      mean(runs.map((r) => r.matches)).toFixed(1),
+      mean(runs.map((r) => r.meanSingles)).toFixed(2),
+      mean(runs.map((r) => r.maxTray)).toFixed(1),
+      theta[kind].toFixed(3),
+      (mean(runs.map((r) => r.totalMs)) / Math.max(1, mean(runs.map((r) => r.taps)))).toFixed(3),
     ]
       .map((c) => String(c).padStart(8))
       .join(''),
   );
 }
 
-const ordered = thetaByKind.novice < thetaByKind.casual && thetaByKind.casual < thetaByKind.expert;
+const thetaOrdered = theta.novice < theta.casual && theta.casual < theta.expert;
+const skillPays = levels.novice < levels.expert;
 
 console.log('');
-console.log(breaches === 0 ? 'OK    playability invariant held on every tap' : `FAIL  invariant breached ${breaches}x`);
-console.log(immortal === 0 ? `OK    every run terminated within ${STEP_CAP} taps` : `FAIL  ${immortal} runs never ended`);
+console.log(breaches === 0 ? 'OK    completability invariant held on every tap' : `FAIL  invariant breached ${breaches}x`);
+// The game is level-based and endless by design, so a strong player running
+// long is the intended outcome, not a bug. What must not happen is a *weak*
+// player surviving forever — that would mean the tray never bites.
+const weakEnded = endedByKind.novice === RUNS && endedByKind.casual === RUNS;
 console.log(
-  `${ordered ? 'OK  ' : 'FAIL'}  theta ranks players: ` +
-    KINDS.map((k) => `${k}=${thetaByKind[k].toFixed(3)}`).join(' < '),
+  weakEnded
+    ? 'OK    novice and casual runs all ended; only strong play runs long'
+    : `FAIL  weak players did not lose (novice ${endedByKind.novice}/${RUNS}, casual ${endedByKind.casual}/${RUNS})`,
 );
+console.log(`      expert reached ${levels.expert.toFixed(1)} levels on average (cap ${STEP_CAP} taps, ${immortal} runs hit it)`);
+console.log(
+  `${skillPays ? 'OK  ' : 'FAIL'}  skill pays: novice ${levels.novice.toFixed(2)} levels < expert ${levels.expert.toFixed(2)}`,
+);
+console.log(
+  `${thetaOrdered ? 'OK  ' : 'FAIL'}  theta ranks players: ` +
+    KINDS.map((k) => `${k}=${theta[k].toFixed(3)}`).join(' < '),
+);
+void MATCH;
 
-if (breaches !== 0 || immortal !== 0 || !ordered) process.exitCode = 1;
+if (breaches !== 0 || !weakEnded || !thetaOrdered || !skillPays) process.exitCode = 1;

@@ -1,4 +1,4 @@
-/* CADENCE - portrait-first, readable at arm's length on a phone and on a
+/* LATENT - portrait-first, readable at arm's length on a phone and on a
    projector. Everything is CSS variables so the canvas renderer can read the
    same palette rather than keeping a second copy of it. */
 
@@ -12,10 +12,6 @@
   --muted: #7d879e;
   --accent: #56e1ff;
 
-  --dir-up: #38d9f0;
-  --dir-right: #ffb23e;
-  --dir-down: #b388ff;
-  --dir-left: #ff6b8a;
 
   --ok: #46e0a0;
   --warn: #ffb23e;
@@ -220,9 +216,9 @@ kbd {
 
 .board-wrap {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 1 / 1.12;
   max-height: 100%;
-  max-width: min(100%, 78dvh);
+  max-width: min(100%, 70dvh);
   position: relative;
 }
 
@@ -232,6 +228,11 @@ kbd {
   display: block;
   border-radius: 20px;
   cursor: pointer;
+}
+
+.hint b {
+  color: var(--text);
+  font-weight: 700;
 }
 
 .hint {
@@ -391,7 +392,7 @@ kbd {
     justify-content: flex-start;
   }
   body.panel-open .board-wrap {
-    max-width: min(100%, 36dvh);
+    max-width: min(100%, 30dvh);
   }
   body.panel-open .hint {
     display: none;

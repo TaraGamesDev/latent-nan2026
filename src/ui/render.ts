@@ -1,310 +1,373 @@
 /**
- * Canvas board renderer.
+ * Canvas renderer: the pile on top, the tray underneath.
  *
- * Keeps its own short-lived effect list rather than tweening game state. The
- * logical grid is updated the instant a tap resolves - the animation is purely
- * a story told afterwards about what already happened - so a dropped frame or a
- * backgrounded tab can never desynchronise the board from the engine.
+ * The one thing worth pointing at is how a covered tile is drawn. It is not
+ * shown face-down — it is shown *undecided*: a dim, slowly breathing blank,
+ * because at that instant the tile genuinely has no face. When it comes free
+ * the assigner writes one and the tile resolves in place. The central idea of
+ * the project is visible without opening anything.
  */
 
-import { DIR_VEC, type Dir, type Grid, type Move, SIZE, xOf, yOf } from '../core/grid';
+import { type Board, type Face, TRAY_SLOTS, type Tile, UNDECIDED, isFree } from '../core/tiles';
 
-type FxKind = 'slide' | 'spawn' | 'jam' | 'float';
+type FxKind = 'resolve' | 'lift' | 'clear' | 'shake';
 
 interface Fx {
   kind: FxKind;
   t0: number;
   dur: number;
-  cell: number;
-  to?: number;
-  dir?: Dir;
-  exits?: boolean;
-  text?: string;
+  tileId?: number;
+  face?: Face;
+  slot?: number;
 }
 
 const easeOut = (t: number): number => 1 - Math.pow(1 - t, 3);
-const easeOutBack = (t: number): number => {
-  const c = 1.7;
-  return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2);
-};
+const easeOutBack = (t: number): number => 1 + 2.7 * Math.pow(t - 1, 3) + 1.7 * Math.pow(t - 1, 2);
+const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+
+/** Eight faces, each a distinct shape *and* a distinct hue — colour alone is
+ *  not enough to tell them apart at thumb size, or for colour-blind players. */
+const FACE_COLOURS = [
+  '#ff6b8a',
+  '#ffb23e',
+  '#46e0a0',
+  '#56e1ff',
+  '#b388ff',
+  '#ff8f5e',
+  '#7de07d',
+  '#ff5edc',
+];
 
 export class BoardView {
   private ctx: CanvasRenderingContext2D;
   private fx: Fx[] = [];
-  private palette!: { bg: string; line: string; text: string; muted: string; accent: string; dirs: string[] };
-  private chain: Move[] = [];
-  private size = 0;
-  private pad = 0;
-  private cell = 0;
+  private w = 0;
+  private h = 0;
+  private tile = 0;
+  private originX = 0;
+  private originY = 0;
+  private trayY = 0;
+  private trayTile = 0;
   private pressed: number | null = null;
+  private hintIds = new Set<number>();
+  private palette = { surface: '#141824', line: '#232a3c', muted: '#7d879e', accent: '#56e1ff' };
 
   constructor(private canvas: HTMLCanvasElement) {
     const ctx = canvas.getContext('2d');
     if (!ctx) throw new Error('2d context unavailable');
     this.ctx = ctx;
-    this.readPalette();
-    this.resize();
-  }
-
-  private readPalette(): void {
     const s = getComputedStyle(document.documentElement);
-    const v = (n: string): string => s.getPropertyValue(n).trim();
+    const v = (n: string, d: string): string => s.getPropertyValue(n).trim() || d;
     this.palette = {
-      bg: v('--surface') || '#141824',
-      line: v('--line') || '#232a3c',
-      text: v('--text') || '#e9edf7',
-      muted: v('--muted') || '#7d879e',
-      accent: v('--accent') || '#56e1ff',
-      // Index by Dir (1..4); slot 0 is unused.
-      dirs: ['', v('--dir-up'), v('--dir-right'), v('--dir-down'), v('--dir-left')],
+      surface: v('--surface', '#141824'),
+      line: v('--line', '#232a3c'),
+      muted: v('--muted', '#7d879e'),
+      accent: v('--accent', '#56e1ff'),
     };
   }
 
-  resize(): void {
+  private lastBox = '';
+
+  /** Re-measure only when the element actually changed size. */
+  layoutIfNeeded(board: Board): void {
+    const r = this.canvas.getBoundingClientRect();
+    const box = `${Math.round(r.width)}x${Math.round(r.height)}`;
+    if (box === this.lastBox) return;
+    this.lastBox = box;
+    this.layout(board);
+  }
+
+  /** Recompute geometry for the current board and canvas size. */
+  layout(board: Board): void {
     const dpr = Math.min(window.devicePixelRatio || 1, 3);
     const rect = this.canvas.getBoundingClientRect();
-    const px = Math.max(1, Math.round(rect.width * dpr));
-    if (this.canvas.width !== px || this.canvas.height !== px) {
-      this.canvas.width = px;
-      this.canvas.height = px;
+    const w = Math.max(1, Math.round(rect.width * dpr));
+    const h = Math.max(1, Math.round(rect.height * dpr));
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w;
+      this.canvas.height = h;
     }
-    this.size = px;
-    this.pad = Math.round(px * 0.035);
-    this.cell = (px - this.pad * 2) / SIZE;
+    this.w = w;
+    this.h = h;
+
+    let maxX = 0;
+    let maxY = 0;
+    for (const t of board.tiles) {
+      if (t.x > maxX) maxX = t.x;
+      if (t.y > maxY) maxY = t.y;
+    }
+    const cols = maxX + 1;
+    const rows = maxY + 1;
+
+    // Reserve the bottom strip for the tray.
+    const trayH = h * 0.17;
+    const boardH = h - trayH - h * 0.04;
+    this.tile = Math.min((w * 0.94) / cols, (boardH * 0.94) / rows);
+    this.originX = (w - this.tile * cols) / 2;
+    this.originY = (boardH - this.tile * rows) / 2;
+    this.trayY = boardH + h * 0.02;
+    this.trayTile = Math.min(trayH * 0.82, (w * 0.92) / TRAY_SLOTS);
   }
 
-  /** Cell under a pointer event, or null when the tap missed the grid. */
-  cellFromPoint(clientX: number, clientY: number): number | null {
+  /** Depth offset so upper layers visibly sit on top. */
+  private lift(layer: number): number {
+    return layer * this.tile * 0.13;
+  }
+
+  private tileRect(t: Tile): [number, number, number] {
+    const s = this.tile * 0.92;
+    const x = this.originX + t.x * this.tile + (this.tile - s) / 2;
+    const y = this.originY + t.y * this.tile + (this.tile - s) / 2 - this.lift(t.layer);
+    return [x, y, s];
+  }
+
+  /** Topmost tile whose rectangle contains the point. */
+  hitTest(board: Board, clientX: number, clientY: number): Tile | null {
     const rect = this.canvas.getBoundingClientRect();
-    const scale = this.size / rect.width;
+    const scale = this.w / rect.width;
     const px = (clientX - rect.left) * scale;
     const py = (clientY - rect.top) * scale;
-    const x = Math.floor((px - this.pad) / this.cell);
-    const y = Math.floor((py - this.pad) / this.cell);
-    if (x < 0 || x >= SIZE || y < 0 || y >= SIZE) return null;
-    return y * SIZE + x;
+    let best: Tile | null = null;
+    for (const t of board.tiles) {
+      if (t.taken) continue;
+      const [x, y, s] = this.tileRect(t);
+      if (px >= x && px <= x + s && py >= y && py <= y + s) {
+        if (!best || t.layer > best.layer) best = t;
+      }
+    }
+    return best;
   }
 
-  setPressed(cell: number | null): void {
-    this.pressed = cell;
+  setPressed(id: number | null): void {
+    this.pressed = id;
   }
 
-  /** Highlight the solver's guaranteed scoring line. */
-  setChain(chain: Move[]): void {
-    this.chain = chain;
+  /** Tiles the panel wants outlined — the assigner's most recent writes. */
+  setHint(ids: number[]): void {
+    this.hintIds = new Set(ids);
   }
 
-  addSlide(move: Move, now: number): void {
-    this.fx.push({
-      kind: 'slide',
-      t0: now,
-      dur: 90 + Math.min(move.distance, 7) * 26,
-      cell: move.from,
-      to: move.exits ? -1 : move.to,
-      dir: move.dir,
-      exits: move.exits,
-    });
+  addResolve(tileId: number, now: number): void {
+    this.fx.push({ kind: 'resolve', t0: now, dur: 380, tileId });
   }
-
-  addSpawns(cells: number[], now: number): void {
-    for (const cell of cells) this.fx.push({ kind: 'spawn', t0: now + 60, dur: 260, cell });
+  addLift(tileId: number, now: number): void {
+    this.fx.push({ kind: 'lift', t0: now, dur: 220, tileId });
   }
-
-  addJam(cell: number, now: number): void {
-    this.fx.push({ kind: 'jam', t0: now, dur: 300, cell });
+  addClear(face: Face, now: number): void {
+    this.fx.push({ kind: 'clear', t0: now, dur: 320, face });
   }
-
-  addFloat(cell: number, text: string, now: number): void {
-    this.fx.push({ kind: 'float', t0: now, dur: 850, cell, text });
+  addShake(now: number): void {
+    this.fx.push({ kind: 'shake', t0: now, dur: 340 });
   }
-
-  /** True while something is still moving, so the loop knows to keep drawing. */
-  get busy(): boolean {
-    return this.fx.length > 0;
-  }
-
-  /** Drop all in-flight effects. Used by capture mode, where a whole run is
-   *  played inside one synchronous loop and every effect would otherwise be
-   *  drawn on top of the others at the same timestamp. */
   clearEffects(): void {
     this.fx.length = 0;
   }
 
-  private center(cell: number): [number, number] {
-    return [
-      this.pad + (xOf(cell) + 0.5) * this.cell,
-      this.pad + (yOf(cell) + 0.5) * this.cell,
-    ];
-  }
-
-  render(grid: Grid, now: number): void {
+  render(board: Board, now: number): void {
     const { ctx } = this;
     this.fx = this.fx.filter((f) => now < f.t0 + f.dur);
+    ctx.clearRect(0, 0, this.w, this.h);
 
-    ctx.clearRect(0, 0, this.size, this.size);
-
-    // Board plate.
-    ctx.fillStyle = this.palette.bg;
-    roundRect(ctx, 0, 0, this.size, this.size, this.size * 0.055);
-    ctx.fill();
-
-    // Grid guides.
-    ctx.strokeStyle = this.palette.line;
-    ctx.lineWidth = Math.max(1, this.size * 0.0016);
-    for (let i = 0; i <= SIZE; i++) {
-      const p = this.pad + i * this.cell;
-      ctx.beginPath();
-      ctx.moveTo(p, this.pad);
-      ctx.lineTo(p, this.pad + this.cell * SIZE);
-      ctx.moveTo(this.pad, p);
-      ctx.lineTo(this.pad + this.cell * SIZE, p);
-      ctx.stroke();
-    }
-
-    // Cells whose tile is being drawn by a slide effect instead.
-    const hidden = new Set<number>();
+    const resolving = new Map<number, number>();
     for (const f of this.fx) {
-      if (f.kind === 'slide' && f.to !== undefined && f.to >= 0) hidden.add(f.to);
+      if (f.kind === 'resolve') resolving.set(f.tileId as number, clamp01((now - f.t0) / f.dur));
     }
-
-    const spawning = new Map<number, number>();
+    const lifting = new Map<number, number>();
     for (const f of this.fx) {
-      if (f.kind === 'spawn') spawning.set(f.cell, clamp01((now - f.t0) / f.dur));
-    }
-    const jamming = new Map<number, number>();
-    for (const f of this.fx) {
-      if (f.kind === 'jam') jamming.set(f.cell, clamp01((now - f.t0) / f.dur));
+      if (f.kind === 'lift') lifting.set(f.tileId as number, clamp01((now - f.t0) / f.dur));
     }
 
-    this.drawChainHint(grid, now);
-
-    for (let i = 0; i < SIZE * SIZE; i++) {
-      const dir = grid[i];
-      if (dir === 0 || hidden.has(i)) continue;
+    // Bottom layers first so upper tiles overlap them.
+    const order = [...board.tiles].sort((a, b) => a.layer - b.layer || a.y - b.y || a.x - b.x);
+    for (const t of order) {
+      if (t.taken) continue;
+      const free = isFree(board, t);
+      const decided = t.face !== UNDECIDED;
+      const [x, y, s] = this.tileRect(t);
 
       let scale = 1;
-      const sp = spawning.get(i);
-      if (sp !== undefined) scale = sp < 0 ? 0 : easeOutBack(sp);
+      const lf = lifting.get(t.id);
+      if (lf !== undefined) scale = 1 - 0.25 * easeOut(lf);
+      if (t.id === this.pressed) scale *= 1.06;
 
-      let dx = 0;
-      const jm = jamming.get(i);
-      if (jm !== undefined) {
-        // Short, decaying wobble: unmistakable but not punishing to look at.
-        dx = Math.sin(jm * Math.PI * 6) * this.cell * 0.09 * (1 - jm);
-      }
-
-      const [cx, cy] = this.center(i);
-      this.drawTile(cx + dx, cy, dir as Dir, scale, i === this.pressed ? 1.06 : 1, 1);
-    }
-
-    // Sliding tiles, drawn above the settled board.
-    for (const f of this.fx) {
-      if (f.kind !== 'slide') continue;
-      const t = clamp01((now - f.t0) / f.dur);
-      const e = easeOut(t);
-      const [sx, sy] = this.center(f.cell);
-      let ex: number;
-      let ey: number;
-      if (f.exits) {
-        const [vx, vy] = DIR_VEC[f.dir as Dir];
-        ex = sx + vx * (this.size + this.cell);
-        ey = sy + vy * (this.size + this.cell);
+      const r = resolving.get(t.id);
+      if (decided && r !== undefined && r < 1) {
+        // Cross-fade from the undecided blank into the written face.
+        this.drawTile(x, y, s, scale, null, 1 - easeOut(r), false);
+        this.drawTile(x, y, s, scale * easeOutBack(Math.min(1, r * 1.2)), t.face, easeOut(r), free);
       } else {
-        [ex, ey] = this.center(f.to as number);
+        this.drawTile(x, y, s, scale, decided ? t.face : null, lf !== undefined ? 1 - lf : 1, free);
       }
-      const alpha = f.exits ? 1 - Math.pow(t, 2) : 1;
-      this.drawTile(sx + (ex - sx) * e, sy + (ey - sy) * e, f.dir as Dir, 1, 1, alpha);
+
+      if (this.hintIds.has(t.id) && decided) {
+        const pulse = 0.35 + 0.25 * Math.sin(now / 320);
+        ctx.strokeStyle = this.palette.accent;
+        ctx.globalAlpha = pulse;
+        ctx.lineWidth = Math.max(2, s * 0.06);
+        roundRect(ctx, x - 2, y - 2, s + 4, s + 4, s * 0.24);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
     }
 
-    // Floating score text.
-    for (const f of this.fx) {
-      if (f.kind !== 'float') continue;
-      const t = clamp01((now - f.t0) / f.dur);
-      const [cx, cy] = this.center(f.cell);
-      ctx.globalAlpha = 1 - t * t;
-      ctx.fillStyle = this.palette.accent;
-      ctx.font = `800 ${this.cell * 0.42}px ${getComputedStyle(document.body).fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(f.text ?? '', cx, cy - this.cell * 0.9 * easeOut(t));
-      ctx.globalAlpha = 1;
-    }
+    this.drawTray(board, now);
   }
 
   /**
-   * Draw the exit chain the solver proved is available.
-   *
-   * Only shown while the director panel is open. It is the clearest single
-   * picture of what the guarantee means: these arrows, in this order, score no
-   * matter what else happens.
+   * An undecided tile is drawn as a slow breathing blank rather than a
+   * face-down card. Nothing is being concealed — there is nothing there yet.
    */
-  private drawChainHint(grid: Grid, now: number): void {
-    if (this.chain.length === 0) return;
+  private drawTile(
+    x: number,
+    y: number,
+    s: number,
+    scale: number,
+    face: Face | null,
+    alpha: number,
+    free: boolean,
+  ): void {
     const { ctx } = this;
-    const pulse = 0.35 + 0.15 * Math.sin(now / 420);
-
-    this.chain.slice(0, 6).forEach((m, n) => {
-      if (grid[m.from] === 0) return;
-      const [cx, cy] = this.center(m.from);
-      const r = this.cell * 0.46;
-
-      ctx.strokeStyle = this.palette.accent;
-      ctx.globalAlpha = pulse;
-      ctx.lineWidth = Math.max(1.5, this.cell * 0.045);
-      ctx.setLineDash([this.cell * 0.12, this.cell * 0.1]);
-      roundRect(ctx, cx - r, cy - r, r * 2, r * 2, r * 0.42);
-      ctx.stroke();
-      ctx.setLineDash([]);
-
-      ctx.globalAlpha = 0.95;
-      ctx.fillStyle = this.palette.accent;
-      ctx.beginPath();
-      ctx.arc(cx - r * 0.82, cy - r * 0.82, this.cell * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = '#04222b';
-      ctx.font = `800 ${this.cell * 0.2}px ${getComputedStyle(document.body).fontFamily}`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(n + 1), cx - r * 0.82, cy - r * 0.8);
-      ctx.globalAlpha = 1;
-    });
-  }
-
-  private drawTile(cx: number, cy: number, dir: Dir, scale: number, press: number, alpha: number): void {
-    const { ctx } = this;
-    const color = this.palette.dirs[dir] || this.palette.accent;
-    const s = this.cell * 0.86 * scale * press;
-    if (s <= 0) return;
+    const size = s * scale;
+    const dx = x + (s - size) / 2;
+    const dy = y + (s - size) / 2;
+    if (size <= 0 || alpha <= 0) return;
 
     ctx.globalAlpha = alpha;
 
-    ctx.fillStyle = withAlpha(color, 0.16);
-    ctx.strokeStyle = withAlpha(color, 0.55);
-    ctx.lineWidth = Math.max(1, this.cell * 0.035);
-    roundRect(ctx, cx - s / 2, cy - s / 2, s, s, s * 0.26);
-    ctx.fill();
-    ctx.stroke();
+    if (face === null) {
+      const breathe = 0.5 + 0.5 * Math.sin(performance.now() / 900 + (x + y) * 0.01);
+      ctx.fillStyle = `rgba(120, 132, 160, ${0.1 + 0.06 * breathe})`;
+      ctx.strokeStyle = `rgba(140, 152, 180, ${0.22 + 0.1 * breathe})`;
+      ctx.lineWidth = Math.max(1, size * 0.03);
+      ctx.setLineDash([size * 0.14, size * 0.1]);
+      roundRect(ctx, dx, dy, size, size, size * 0.22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      return;
+    }
 
-    // Glyph: a solid head with a short stem, rotated to face `dir`.
-    const [vx, vy] = DIR_VEC[dir];
-    const a = Math.atan2(vy, vx);
+    const colour = FACE_COLOURS[face % FACE_COLOURS.length];
+    // A cast shadow is what makes the pile read as stacked rather than scattered.
     ctx.save();
-    ctx.translate(cx, cy);
-    ctx.rotate(a);
-    ctx.fillStyle = color;
-    const h = s * 0.3;
-    ctx.beginPath();
-    ctx.moveTo(h * 0.95, 0);
-    ctx.lineTo(-h * 0.35, -h * 0.8);
-    ctx.lineTo(-h * 0.35, h * 0.8);
-    ctx.closePath();
-    ctx.fill();
-    roundRect(ctx, -h * 1.25, -h * 0.26, h * 1.0, h * 0.52, h * 0.26);
+    ctx.shadowColor = 'rgba(0,0,0,0.55)';
+    ctx.shadowBlur = size * 0.16;
+    ctx.shadowOffsetY = size * 0.09;
+    ctx.fillStyle = '#0b0e15';
+    roundRect(ctx, dx, dy, size, size, size * 0.22);
     ctx.fill();
     ctx.restore();
 
+    ctx.fillStyle = free ? withAlpha(colour, 0.2) : withAlpha(colour, 0.09);
+    ctx.strokeStyle = withAlpha(colour, free ? 0.75 : 0.28);
+    ctx.lineWidth = Math.max(1, size * 0.045);
+    roundRect(ctx, dx, dy, size, size, size * 0.22);
+    ctx.fill();
+    ctx.stroke();
+
+    ctx.fillStyle = free ? colour : withAlpha(colour, 0.4);
+    drawGlyph(ctx, dx + size / 2, dy + size / 2, size * 0.3, face);
+
     ctx.globalAlpha = 1;
   }
+
+  private drawTray(board: Board, now: number): void {
+    const { ctx } = this;
+    const gap = this.trayTile * 0.14;
+    const totalW = TRAY_SLOTS * this.trayTile + (TRAY_SLOTS - 1) * gap;
+    const startX = (this.w - totalW) / 2;
+
+    let shake = 0;
+    for (const f of this.fx) {
+      if (f.kind === 'shake') {
+        const t = clamp01((now - f.t0) / f.dur);
+        shake = Math.sin(t * Math.PI * 7) * this.trayTile * 0.12 * (1 - t);
+      }
+    }
+
+    for (let i = 0; i < TRAY_SLOTS; i++) {
+      const x = startX + i * (this.trayTile + gap) + shake;
+      const y = this.trayY;
+      const danger = i >= TRAY_SLOTS - 2;
+
+      ctx.strokeStyle = danger ? 'rgba(255,107,138,0.45)' : this.palette.line;
+      ctx.fillStyle = 'rgba(255,255,255,0.02)';
+      ctx.lineWidth = Math.max(1, this.trayTile * 0.035);
+      roundRect(ctx, x, y, this.trayTile, this.trayTile, this.trayTile * 0.22);
+      ctx.fill();
+      ctx.stroke();
+
+      const face = board.tray[i];
+      if (face === undefined) continue;
+      const colour = FACE_COLOURS[face % FACE_COLOURS.length];
+      ctx.fillStyle = withAlpha(colour, 0.24);
+      ctx.strokeStyle = withAlpha(colour, 0.8);
+      roundRect(ctx, x, y, this.trayTile, this.trayTile, this.trayTile * 0.22);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = colour;
+      drawGlyph(ctx, x + this.trayTile / 2, y + this.trayTile / 2, this.trayTile * 0.3, face);
+    }
+  }
+}
+
+/* --------------------------- drawing helpers ---------------------------- */
+
+/** Eight glyphs, distinguishable by silhouette so colour is never load-bearing. */
+function drawGlyph(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, face: Face): void {
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.beginPath();
+  switch (face % 8) {
+    case 0:
+      ctx.arc(0, 0, r, 0, Math.PI * 2);
+      break;
+    case 1:
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r * 0.92, r * 0.7);
+      ctx.lineTo(-r * 0.92, r * 0.7);
+      break;
+    case 2:
+      ctx.rect(-r * 0.82, -r * 0.82, r * 1.64, r * 1.64);
+      break;
+    case 3:
+      ctx.moveTo(0, -r);
+      ctx.lineTo(r, 0);
+      ctx.lineTo(0, r);
+      ctx.lineTo(-r, 0);
+      break;
+    case 4: {
+      for (let i = 0; i < 5; i++) {
+        const a = -Math.PI / 2 + (i * 2 * Math.PI) / 5;
+        const b = a + Math.PI / 5;
+        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+        ctx.lineTo(Math.cos(b) * r * 0.45, Math.sin(b) * r * 0.45);
+      }
+      break;
+    }
+    case 5: {
+      for (let i = 0; i < 6; i++) {
+        const a = (i * Math.PI) / 3;
+        ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r);
+      }
+      break;
+    }
+    case 6: {
+      const t = r * 0.36;
+      ctx.rect(-t, -r, t * 2, r * 2);
+      ctx.rect(-r, -t, r * 2, t * 2);
+      break;
+    }
+    default: {
+      ctx.moveTo(-r, r * 0.8);
+      ctx.quadraticCurveTo(0, -r * 1.3, r, r * 0.8);
+      break;
+    }
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function roundRect(
@@ -325,11 +388,10 @@ function roundRect(
   ctx.closePath();
 }
 
-/** Accepts the hex values the stylesheet actually contains. */
 function withAlpha(hex: string, alpha: number): string {
   const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex.trim());
   if (!m) return hex;
   return `rgba(${parseInt(m[1], 16)}, ${parseInt(m[2], 16)}, ${parseInt(m[3], 16)}, ${alpha})`;
 }
 
-const clamp01 = (v: number): number => (v < 0 ? 0 : v > 1 ? 1 : v);
+export { FACE_COLOURS };

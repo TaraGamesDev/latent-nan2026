@@ -1,9 +1,9 @@
 {
-  "name": "cadence",
+  "name": "latent",
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "CADENCE - a block puzzle whose every moment is designed by an AI director",
+  "description": "LATENT - a tile puzzle whose levels are written as you play",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

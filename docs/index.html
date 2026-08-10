@@ -6,22 +6,22 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     />
-    <title>CADENCE — 매 순간을 설계하는 화살표 퍼즐</title>
+    <title>LATENT — 덮인 타일은 아직 정해져 있지 않습니다</title>
     <meta
       name="description"
-      content="AI 디렉터가 매 탭마다 당신의 실력을 다시 재고, 다음 순간을 설계합니다."
+      content="레벨을 미리 만들지 않는 퍼즐. 타일이 드러나는 순간, AI가 당신의 상황을 보고 무늬를 결정합니다."
     />
     <meta name="theme-color" content="#090b11" />
-    <script type="module" crossorigin src="./assets/index-DSc8TC3O.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-DF68Fo9Z.css">
+    <script type="module" crossorigin src="./assets/index-C4gHfWFv.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-Dj-aM-tO.css">
   </head>
   <body>
     <div id="app">
       <header class="hud">
         <div class="hud-top">
           <div class="brand">
-            <span class="brand-name">CADENCE</span>
-            <span class="brand-sub">AI DIRECTED</span>
+            <span class="brand-name">LATENT</span>
+            <span class="brand-sub">WRITTEN AS YOU PLAY</span>
           </div>
           <button id="panel-toggle" class="ghost-btn" aria-expanded="false">
             AI 패널 <kbd>D</kbd>
@@ -34,33 +34,31 @@
             <span class="stat-value" id="score">0</span>
           </div>
           <div class="stat">
-            <span class="stat-label">콤보</span>
-            <span class="stat-value" id="combo">—</span>
+            <span class="stat-label">레벨</span>
+            <span class="stat-value" id="level">1</span>
           </div>
           <div class="stat stat-wide">
-            <span class="stat-label">압력 <b id="intensity-pct">0%</b></span>
-            <div class="meter"><i id="intensity-bar"></i></div>
+            <span class="stat-label">트레이 위험 <b id="danger-pct">0%</b></span>
+            <div class="meter"><i id="danger-bar"></i></div>
           </div>
         </div>
       </header>
 
       <main class="stage">
         <div class="board-wrap">
-          <canvas id="board" aria-label="게임 보드"></canvas>
+          <canvas id="board" aria-label="타일 더미와 트레이"></canvas>
         </div>
-        <p class="hint" id="hint">
-          화살표를 누르면 그 방향으로 미끄러집니다. 판 밖으로 나가면 득점.
-        </p>
+        <p class="hint" id="hint"></p>
       </main>
 
       <section id="gameover" class="overlay" hidden>
         <div class="overlay-card">
-          <h2 id="go-title">보드가 막혔습니다</h2>
+          <h2 id="go-title">트레이가 가득 찼습니다</h2>
           <div class="go-stats">
             <div><span>점수</span><b id="go-score">0</b></div>
+            <div><span>클리어한 레벨</span><b id="go-levels">0</b></div>
             <div><span>탭</span><b id="go-taps">0</b></div>
-            <div><span>탈출</span><b id="go-exits">0</b></div>
-            <div><span>최고 콤보</span><b id="go-combo">0</b></div>
+            <div><span>완성</span><b id="go-matches">0</b></div>
           </div>
           <p class="go-read" id="go-read"></p>
           <button id="restart" class="primary-btn">다시 하기</button>
@@ -69,7 +67,7 @@
 
       <aside id="panel" class="panel" hidden>
         <div class="panel-head">
-          <h2>AI 디렉터</h2>
+          <h2>AI 배정기</h2>
           <button id="panel-close" class="ghost-btn" aria-label="패널 닫기">✕</button>
         </div>
         <div class="panel-body" id="panel-body"></div>
