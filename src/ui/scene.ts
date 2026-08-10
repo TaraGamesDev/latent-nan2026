@@ -1,17 +1,17 @@
 /**
  * Three.js scene: a wall of bolted steel plates, and the holders below it.
  *
- * Everything is procedural — there is not a single texture, model or font file
- * in the repository. Plates are rounded boxes in brushed steel with recessed
- * bolt holes, screws are a hex head on a shaft, and the metal look comes from an
- * image-based light generated at runtime rather than from an HDRI download. The
- * build stays self-contained and the first load stays fast, which matters more
- * than it sounds: the judge's first impression is whether the link opens.
+ * The parts are real models — see `assets.ts` — but nothing here is hand-made:
+ * every mesh comes out of a committed, deterministic Blender script, and the
+ * metal look comes from an image-based light generated at runtime rather than
+ * from an HDRI download. The build stays self-contained and the first load stays
+ * quick, which matters more than it sounds: the judge's first impression is
+ * whether the link opens.
  *
- * Occlusion carries a rule for free. A screw is unreachable exactly when a
- * higher plate covers its position — which is also exactly when that plate hides
- * it from the camera. Nothing has to be drawn dimmed or crossed out; if you can
- * see a screw, you can turn it.
+ * If you can see a screw, you can turn it. Occlusion very nearly gives that for
+ * free, since a screw is unreachable exactly when a plate covers its position,
+ * but the rule tests the screw's *centre* and a head is wider than a point — so
+ * unreachable screws are hidden outright rather than left to peek past an edge.
  *
  * The renderer never decides anything. It reads board state and plays back what
  * already happened, so a dropped frame cannot desynchronise it from the engine.
@@ -49,7 +49,14 @@ import {
   replaceMaterial,
 } from './assets';
 
-import { type Board, type Colour, HOLDERS, HOLDER_CAPACITY, UNDECIDED } from '../core/plates';
+import {
+  type Board,
+  type Colour,
+  HOLDERS,
+  HOLDER_CAPACITY,
+  UNDECIDED,
+  isReachable,
+} from '../core/plates';
 
 /** Anodised finishes. Separated in hue *and* value, so they survive both a
  *  colour-blind player and a compressed video. */
@@ -85,10 +92,10 @@ const HOLE_SQUASH = 0.16;
 /**
  * A brushed-steel roughness map, drawn at runtime on a 2D canvas.
  *
- * Uniform roughness is what makes an untextured metal read as plastic: the
- * highlight is a single clean gradient with nothing breaking it up. A few
- * thousand horizontal streaks of varying roughness is all it takes, and it keeps
- * the promise that the repository ships no asset files.
+ * Uniform roughness is what makes a metal read as plastic: the highlight is a
+ * single clean gradient with nothing breaking it up. A few thousand horizontal
+ * streaks of varying roughness is all it takes, and it costs nothing to
+ * download — which is the whole argument for keeping it over a generated map.
  */
 function brushedRoughness(): CanvasTexture {
   const c = document.createElement('canvas');
@@ -201,12 +208,14 @@ export class WallScene {
       // finish to look like metal — and a mirror finish blew the top half out.
       metalness: 0.82,
       roughness: 0.58,
-      roughnessMap: brushed,
+      roughnessMap: assets.steelRoughness,
     });
     this.steelEdge = new MeshStandardMaterial({
       color: 0x545c6a,
       metalness: 0.84,
       roughness: 0.5,
+      // The holder has no UVs, so this map does nothing there; it is kept only
+      // so the two steels stay defined the same way.
       roughnessMap: brushed,
     });
     this.hole = new MeshStandardMaterial({ color: 0x333c4d, metalness: 0.75, roughness: 0.62 });
@@ -395,7 +404,16 @@ export class WallScene {
         if (!g.userData.leaving) g.visible = false;
         continue;
       }
-      g.visible = true;
+      /*
+       * Only reachable screws are drawn.
+       *
+       * Occlusion nearly carries the rule on its own — a screw is unreachable
+       * exactly when a plate covers its position — but "covers its position" is
+       * a test on the screw's centre, and a chunky head whose centre is just
+       * inside the plate above still pokes out past the edge. A visible thing
+       * that cannot be tapped is worse than an invisible one.
+       */
+      g.visible = isReachable(board, s);
       // While a reveal is playing the head deliberately stays raw metal, so the
       // player watches the colour get decided instead of finding it already set.
       if (!g.userData.revealing) this.paintScrew(g, s.colour);

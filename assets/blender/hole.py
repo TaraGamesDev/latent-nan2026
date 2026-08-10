@@ -370,6 +370,13 @@ for p in prims:
              js["accessors"][p["indices"]]["count"] // 3,
              sorted(p["attributes"].keys()),
              [round(x, 4) for x in acc["min"]], [round(x, 4) for x in acc["max"]]))
+    # Frozen bounds from the previous good export. A triangle count alone does not
+    # pin geometry — the sibling screw.py rebuilt its head at the wrong radius with
+    # an unchanged count when a material constant shadowed a dimension constant.
+    for got, want in zip(acc["min"] + acc["max"],
+                         [-0.3, -0.238, -0.3, 0.3, 0.014, 0.3]):
+        assert abs(got - want) < 5e-4, \
+            "hole bounds moved: this pass must not change geometry"
 for m in js["materials"]:
     pbr = m["pbrMetallicRoughness"]
     print("   MAT %s baseColorFactor=%s metallicFactor=%s roughnessFactor=%s "

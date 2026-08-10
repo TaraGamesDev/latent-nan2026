@@ -301,19 +301,23 @@ reset_scene()
 # runtime material scene.ts:210 builds for a decided screw: metalness 0.45, roughness
 # 0.28. ("keep it light" was the v1 rule and it is not good enough -- 0.84 light is
 # still a 16% multiply.)
-HEAD_RGB, HEAD_M, HEAD_R = (1.0, 1.0, 1.0), 0.45, 0.28
-MAT_HEAD = new_material("ScrewHead", HEAD_RGB, HEAD_M, HEAD_R)
+# NB: named HEAD_BASE/..._SHINE and not HEAD_RGB/HEAD_M/HEAD_R -- HEAD_R is the head
+# RADIUS, a geometry constant twenty lines up, and shadowing it here silently rebuilt
+# the lathe at r = 0.28 (the roughness value) with an unchanged triangle count.
+HEAD_BASE, HEAD_METALLIC, HEAD_ROUGHNESS = (1.0, 1.0, 1.0), 0.45, 0.28
+MAT_HEAD = new_material("ScrewHead", HEAD_BASE, HEAD_METALLIC, HEAD_ROUGHNESS)
 # ScrewMetal == scene.ts:185 this.shaftMat, 0x3d4453 / metalness 0.85 / roughness 0.50.
 # It lines the drive recess as well as the shaft. The v1 values (linear 0.13/0.14/0.155,
 # metallic left to the glTF default of 1.0, rough 0.60) were tuned in isolation against a
 # bright probe render; against the game's own dim IBL they render the socket as a dead
 # black slot rather than the sunk steel one the wall already has.
-METAL_RGB, METAL_M, METAL_R = srgb(0x3D4453), 0.85, 0.50
-MAT_METAL = new_material("ScrewMetal", METAL_RGB, METAL_M, METAL_R)
+METAL_BASE, METAL_METALLIC, METAL_ROUGHNESS = srgb(0x3D4453), 0.85, 0.50
+MAT_METAL = new_material("ScrewMetal", METAL_BASE, METAL_METALLIC, METAL_ROUGHNESS)
 print("  ScrewHead  linear=%s (WHITE, runtime tint multiplies into it) "
-      "metallic=%.2f rough=%.2f" % (HEAD_RGB, HEAD_M, HEAD_R))
+      "metallic=%.2f rough=%.2f" % (HEAD_BASE, HEAD_METALLIC, HEAD_ROUGHNESS))
 print("  ScrewMetal linear=%s (sRGB #3D4453) metallic=%.2f rough=%.2f"
-      % (tuple(round(c, 5) for c in METAL_RGB), METAL_M, METAL_R))
+      % (tuple(round(c, 5) for c in METAL_BASE), METAL_METALLIC, METAL_ROUGHNESS))
+assert abs(HEAD_R - HEAD_D * 0.5) < 1e-12, "a material constant shadowed HEAD_R"
 
 # ---- 1. one-piece lathe: shaft core + flange + pan head + boss -------------
 PROFILE = [
@@ -512,10 +516,10 @@ if patched:
     jb = json.dumps(doc, separators=(",", ":")).encode("utf-8")
     jb += b" " * ((4 - len(jb) % 4) % 4)              # chunks must be 4-aligned
     bb = binc + b"\x00" * ((4 - len(binc) % 4) % 4)
-    body = (struct.pack("<II", len(jb), 0x4E4F534A) + jb
-            + (struct.pack("<II", len(bb), 0x004E4942) + bb if bb else b""))
+    payload = (struct.pack("<II", len(jb), 0x4E4F534A) + jb
+               + (struct.pack("<II", len(bb), 0x004E4942) + bb if bb else b""))
     with open(OUT_GLB, "wb") as f:
-        f.write(struct.pack("<III", 0x46546C67, 2, 12 + len(body)) + body)
+        f.write(struct.pack("<III", 0x46546C67, 2, 12 + len(payload)) + payload)
     print("  stamped explicit white baseColorFactor on: %s" % ", ".join(patched))
     assert next(b for t, b in glb_split(open(OUT_GLB, "rb").read())
                 if t == 0x004E4942) == bb, "BIN chunk changed during the rewrite"
@@ -531,8 +535,8 @@ print("VERIFY file=%s size=%dB nodes=%s meshes=%s materials=%s"
          [n["name"] for n in js["nodes"]],
          [m["name"] for m in js["meshes"]],
          [m["name"] for m in js["materials"]]))
-WANT = {"ScrewHead": (HEAD_RGB, HEAD_M, HEAD_R),
-        "ScrewMetal": (METAL_RGB, METAL_M, METAL_R)}
+WANT = {"ScrewHead": (HEAD_BASE, HEAD_METALLIC, HEAD_ROUGHNESS),
+        "ScrewMetal": (METAL_BASE, METAL_METALLIC, METAL_ROUGHNESS)}
 for m in js["materials"]:
     pbr = m["pbrMetallicRoughness"]
     print("   MAT %s baseColorFactor=%s metallicFactor=%s roughnessFactor=%s "
@@ -552,15 +556,27 @@ assert js["materials"][[m["name"] for m in js["materials"]].index("ScrewHead")] 
     ["pbrMetallicRoughness"]["baseColorFactor"] == [1.0, 1.0, 1.0, 1.0], \
     "ScrewHead must be pure white or the runtime tint is multiplied down"
 
+# Frozen per-primitive bounds, measured out of the previous good export. A triangle
+# count alone does NOT pin the geometry: shadowing HEAD_R with a roughness value
+# rebuilt the head at r=0.28 and still produced exactly 2908 triangles.
+BASELINE = {
+    "ScrewHead":  ([-0.2150, -0.0005, -0.2138], [0.2150, 0.1921, 0.2138]),
+    "ScrewMetal": ([-0.1084, -0.5000, -0.1084], [0.1084, 0.1916, 0.1084]),
+}
 glb_tris = 0
 for p in js["meshes"][0]["primitives"]:
     acc = js["accessors"][p["attributes"]["POSITION"]]
     t = js["accessors"][p["indices"]]["count"] // 3
     glb_tris += t
+    name = js["materials"][p["material"]]["name"]
     print("   prim mat=%s verts=%d tris=%d attrs=%s min=%s max=%s"
-          % (js["materials"][p["material"]]["name"], acc["count"], t,
-             sorted(p["attributes"].keys()),
+          % (name, acc["count"], t, sorted(p["attributes"].keys()),
              [round(x, 4) for x in acc["min"]], [round(x, 4) for x in acc["max"]]))
+    if (LATHE_SEGS, THREAD_BEVEL_SEGS, HEAD_STYLE) == (30, 1, "pan"):
+        want_mn, want_mx = BASELINE[name]
+        for got, want in zip(acc["min"] + acc["max"], want_mn + want_mx):
+            assert abs(got - want) < 5e-4, \
+                "%s bounds moved: this pass must not change geometry" % name
 print("   glb_total_tris=%d  images=%d  extensionsUsed=%s"
       % (glb_tris, len(js.get("images", [])), js.get("extensionsUsed", [])))
 # Shared convention for every asset in this project: UNDER 4000 triangles.

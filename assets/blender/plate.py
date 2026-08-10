@@ -408,6 +408,13 @@ for p in js["meshes"][0]["primitives"]:
              sorted(p["attributes"].keys()),
              [round(x, 4) for x in acc["min"]], [round(x, 4) for x in acc["max"]]))
     assert "TEXCOORD_0" in p["attributes"], "plate.glb must carry UVs"
+    # Frozen bounds from the previous good export. A triangle count alone does not
+    # pin geometry — the sibling screw.py rebuilt its head at the wrong radius with
+    # an unchanged count when a material constant shadowed a dimension constant.
+    for got, want in zip(acc["min"] + acc["max"],
+                         [-1.0, -0.13, -1.0, 1.0, 0.13, 1.0]):
+        assert abs(got - want) < 5e-4, \
+            "plate bounds moved: this pass must not change geometry"
 
 # ---- the UV claim, checked against the bytes ---------------------------------
 prim = js["meshes"][0]["primitives"][0]
@@ -441,4 +448,5 @@ print("BUDGET %s (%d tris, limit %d, headroom %d)"
       % ("ok" if tris < BUDGET else "EXCEEDED", tris, BUDGET, BUDGET - tris))
 assert tris < BUDGET, "over the %d-triangle project budget" % BUDGET
 assert glb_tris == tris, "GLB tri count disagrees with the evaluated mesh"
+assert tris == 1788, "plate tri count changed; this pass must not touch geometry"
 print("RESULT %s" % ("OK" if (tris < BUDGET and ok_slice) else "PROBLEM"))

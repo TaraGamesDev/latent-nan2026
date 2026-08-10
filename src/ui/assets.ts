@@ -24,6 +24,9 @@
 import {
   Box3,
   BufferAttribute,
+  RepeatWrapping,
+  type Texture,
+  TextureLoader,
   type BufferGeometry,
   Group,
   Mesh,
@@ -40,6 +43,8 @@ export interface Assets {
   holder: Object3D;
   /** The plate's source half-extent in the board plane, for the nine-slice. */
   plateHalf: number;
+  /** Brushed-steel roughness for the plates. */
+  steelRoughness: Texture;
 }
 
 /** World units covered by one repeat of the steel texture. */
@@ -170,16 +175,24 @@ export function nineSlice(source: BufferGeometry, w: number, h: number, half: nu
 
 export async function loadAssets(): Promise<Assets> {
   const loader = new GLTFLoader();
-  const [screw, plate, hole, holder] = await Promise.all([
+  const tex = new TextureLoader();
+  const [screw, plate, hole, holder, steelRoughness] = await Promise.all([
     load(loader, 'screw'),
     load(loader, 'plate'),
     load(loader, 'hole'),
     load(loader, 'holder'),
+    tex.loadAsync(new URL('./textures/steel-roughness.png', document.baseURI).href),
   ]);
+
+  // The plate's UVs are world position over STEEL_TILE, so the tiling comes from
+  // UV values running past 1 rather than from a repeat factor.
+  steelRoughness.wrapS = RepeatWrapping;
+  steelRoughness.wrapT = RepeatWrapping;
+  steelRoughness.anisotropy = 4;
 
   const box = new Box3().setFromObject(plate);
   const size = box.getSize(new Vector3());
   const plateHalf = Math.max(size.x, size.y) / 2;
 
-  return { screw, plate, hole, holder, plateHalf };
+  return { screw, plate, hole, holder, plateHalf, steelRoughness };
 }

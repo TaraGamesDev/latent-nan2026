@@ -390,15 +390,26 @@ print("VERIFY file=%s size=%dB nodes=%s meshes=%s materials=%s"
          [nd["name"] for nd in js["nodes"]],
          [m["name"] for m in js["meshes"]],
          [m["name"] for m in js["materials"]]))
+# Frozen per-primitive bounds from the previous good export. A triangle count alone
+# does not pin geometry — the sibling screw.py rebuilt its head at the wrong radius
+# with an unchanged count when a material constant shadowed a dimension constant.
+BASELINE = {
+    "HolderBody": ([-1.0092, -0.1700, -0.4496], [1.0092, 0.1700, 0.4496]),
+    "HolderWell": ([-0.8416, -0.0200, -0.2656], [0.8416, 0.1185, 0.2656]),
+}
 total = 0
 for p in js["meshes"][0]["primitives"]:
     acc = js["accessors"][p["attributes"]["POSITION"]]
     t = js["accessors"][p["indices"]]["count"] // 3
     total += t
+    nm = js["materials"][p["material"]]["name"]
     print("   prim mat=%s verts=%d tris=%d attrs=%s min=%s max=%s"
-          % (js["materials"][p["material"]]["name"], acc["count"], t,
-             sorted(p["attributes"].keys()),
+          % (nm, acc["count"], t, sorted(p["attributes"].keys()),
              [round(x, 4) for x in acc["min"]], [round(x, 4) for x in acc["max"]]))
+    want_mn, want_mx = BASELINE[nm]
+    for got, want in zip(acc["min"] + acc["max"], want_mn + want_mx):
+        assert abs(got - want) < 5e-4, \
+            "%s bounds moved: this pass must not change geometry" % nm
 print("   glb total tris=%d" % total)
 
 WANT = {"HolderBody": (BODY_RGB, BODY_M, BODY_R),
