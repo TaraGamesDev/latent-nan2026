@@ -8,17 +8,16 @@
 
 import {
   type Board,
-  type Face,
-  MATCH,
-  TRAY_SLOTS,
-  type Tile,
+  type Colour,
+  HOLDER_CAPACITY,
+  type Screw,
   cloneBoard,
   createBoard,
   isCleared,
-  isFree,
-  remaining,
-  take,
-} from '../core/tiles';
+  isReachable,
+  screwsLeft,
+  turn,
+} from '../core/plates';
 import { makeRng, randomSeed, type Rng } from '../core/rng';
 import {
   type Ledger,
@@ -27,7 +26,7 @@ import {
   dangerOf,
   revealAll,
 } from '../ai/assigner';
-import { challengeOf } from '../ai/solver';
+import { challengeOf, rankTurns } from '../ai/solver';
 import {
   type MoodState,
   type SkillState,
@@ -55,21 +54,21 @@ export interface GameState {
   score: number;
   combo: number;
   taps: number;
-  matches: number;
-  /** Levels finished this run. */
+  /** Holders completed this run. */
+  completions: number;
+  /** Plates dropped this run. */
+  platesDropped: number;
+  /** Walls finished this run. */
   cleared: number;
   over: boolean;
-  won: boolean;
 
   skill: SkillState;
   mood: MoodState;
-  /** Decisions made on the most recent reveal batch. */
   lastReveals: RevealDecision[];
-  /** The most recent decision that actually happened. A tap that uncovers
+  /** The most recent decision that actually happened. A turn that exposes
    *  nothing produces an empty batch, and the panel should still have the last
-   *  real one to show rather than falling back to its empty state. */
+   *  real one to show. */
   lastDecision: RevealDecision | null;
-  /** Every decision this level, for the panel's counters. */
   revealCount: number;
   history: HistoryPoint[];
 
@@ -77,19 +76,24 @@ export interface GameState {
 }
 
 export interface TapResult {
-  kind: 'ignored' | 'take' | 'match';
-  tile?: Tile;
-  matched: Face | null;
+  kind: 'ignored' | 'turn' | 'complete';
+  screw?: Screw;
+  completed: boolean;
+  /** Plates that dropped as a result. */
+  fallen: number[];
   points: number;
   reveals: RevealDecision[];
   levelCleared: boolean;
   gameOver: boolean;
 }
 
-/** Levels grow a little as the run goes on. */
-function boardFor(level: number): Board {
+/** Walls grow a little as the run goes on. */
+function wallFor(level: number): Board {
+  // Taller than wide, because phones are. The wall grows in depth faster than
+  // in area: more layers means more screws whose colour is still unwritten,
+  // which is what gives the assigner room to work.
   const cols = Math.min(7, 5 + Math.floor(level / 3));
-  const rows = Math.min(6, 4 + Math.floor(level / 4));
+  const rows = Math.min(9, 6 + Math.floor(level / 2));
   const layers = Math.min(5, 3 + Math.floor(level / 2));
   return createBoard(cols, rows, layers);
 }
@@ -97,7 +101,7 @@ function boardFor(level: number): Board {
 export function createGame(seed: number = randomSeed(), now = Date.now()): GameState {
   const rng = makeRng(seed);
   const state: GameState = {
-    board: boardFor(1),
+    board: wallFor(1),
     ledger: createLedger(),
     seed,
     rng,
@@ -105,10 +109,10 @@ export function createGame(seed: number = randomSeed(), now = Date.now()): GameS
     score: 0,
     combo: 0,
     taps: 0,
-    matches: 0,
+    completions: 0,
+    platesDropped: 0,
     cleared: 0,
     over: false,
-    won: false,
     skill: createSkillState(),
     mood: createMoodState(),
     lastReveals: [],
@@ -123,11 +127,11 @@ export function createGame(seed: number = randomSeed(), now = Date.now()): GameS
   return state;
 }
 
-/** Start the next level, carrying the player model across. */
+/** Start the next wall, carrying the player model across. */
 function advance(s: GameState): void {
   s.level++;
   s.cleared++;
-  s.board = boardFor(s.level);
+  s.board = wallFor(s.level);
   s.ledger = createLedger();
   s.lastReveals = revealAll(s.board, s.ledger, s.skill, s.mood, s.rng);
   s.lastDecision = s.lastReveals.at(-1) ?? s.lastDecision;
@@ -135,53 +139,63 @@ function advance(s: GameState): void {
 }
 
 /**
- * Resolve a tap on a tile.
+ * Resolve a tap on a screw.
  *
- * Order matters: the position is graded *before* the tile moves, because regret
- * is only meaningful against the alternatives that existed at the moment of the
- * decision.
+ * Order matters: the position is graded *before* the screw comes out, because
+ * regret is only meaningful against the alternatives that existed at the moment
+ * of the decision.
  */
-export function tap(s: GameState, tileId: number, now = Date.now()): TapResult {
-  const tile = s.board.tiles[tileId];
-  if (s.over || !tile || tile.taken || tile.face < 0 || !isFree(s.board, tile)) {
-    return {
-      kind: 'ignored',
-      matched: null,
-      points: 0,
-      reveals: [],
-      levelCleared: false,
-      gameOver: false,
-    };
+export function tap(s: GameState, screwId: number, now = Date.now()): TapResult {
+  const screw = s.board.screws[screwId];
+  const idle: TapResult = {
+    kind: 'ignored',
+    completed: false,
+    fallen: [],
+    points: 0,
+    reveals: [],
+    levelCleared: false,
+    gameOver: false,
+  };
+  if (s.over || !screw || screw.removed || screw.colour < 0 || !isReachable(s.board, screw)) {
+    return idle;
   }
 
   const before = cloneBoard(s.board);
-  const obs = observeTap(before, tileId, Math.max(0, now - s.readyAt));
+  const obs = observeTap(before, screwId, Math.max(0, now - s.readyAt));
 
   s.taps++;
-  const result = take(s.board, tile);
+  const result = turn(s.board, screw);
+  if (result.overflow) {
+    s.over = true;
+    return { ...idle, kind: 'turn', screw, gameOver: true };
+  }
+
+  s.platesDropped += result.fallen.length;
 
   let points = 0;
-  let kind: TapResult['kind'] = 'take';
-  if (result.matched !== null) {
-    kind = 'match';
-    s.matches++;
+  let kind: TapResult['kind'] = 'turn';
+  if (result.completed) {
+    kind = 'complete';
+    s.completions++;
     s.combo++;
-    // Clearing while the tray is tight is worth more: it is the harder play and
-    // the one the game is trying to teach.
-    const pressure = 1 + (TRAY_SLOTS - s.board.tray.length - MATCH) * 0.12;
-    points = Math.round(30 * Math.max(0.6, pressure) * (1 + s.combo * 0.15));
+    // Completing while holders are scarce is the harder play and the one the
+    // game is trying to teach.
+    const scarcity = 1 + (HOLDER_CAPACITY - s.board.holders.filter((h) => h.colour < 0).length) * 0.18;
+    points = Math.round(40 * scarcity * (1 + s.combo * 0.15));
     s.score += points;
   } else {
     s.combo = 0;
   }
+  points += result.fallen.length * 25;
+  s.score += result.fallen.length * 25;
 
   if (obs) {
     s.skill = updateSkill(s.skill, obs);
     s.mood = updateMood(s.mood, obs, s.skill);
   }
 
-  // Anything the tap uncovered gets written now, in light of where the player
-  // just landed.
+  // Anything the dropped plates exposed gets written now, in light of where the
+  // player just landed.
   const reveals = revealAll(s.board, s.ledger, s.skill, s.mood, s.rng);
   s.lastReveals = reveals;
   if (reveals.length > 0) s.lastDecision = reveals[reveals.length - 1];
@@ -197,18 +211,30 @@ export function tap(s: GameState, tileId: number, now = Date.now()): TapResult {
 
   const levelCleared = isCleared(s.board);
   if (levelCleared) {
-    s.score += 200 + s.level * 50;
+    s.score += 250 + s.level * 60;
     advance(s);
+  } else if (rankTurns(s.board).length === 0) {
+    // Every reachable screw is a colour no holder can take. This is the run's
+    // real failure state, and it is reached by the player's own sequencing —
+    // the assigner guarantees a legal move exists whenever it writes, but it
+    // does not get to write again until a plate falls.
+    s.over = true;
+    return { kind, screw, completed: result.completed, fallen: result.fallen, points, reveals, levelCleared: false, gameOver: true };
   }
 
-  const gameOver = !levelCleared && result.overflow;
-  if (gameOver) s.over = true;
-  s.readyAt = now;
-
-  return { kind, tile, matched: result.matched, points, reveals, levelCleared, gameOver };
+  return {
+    kind,
+    screw,
+    completed: result.completed,
+    fallen: result.fallen,
+    points,
+    reveals,
+    levelCleared,
+    gameOver: false,
+  };
 }
 
-/** How close the tray is to ending the run, for the HUD. */
 export const dangerOfGame = (s: GameState): number => dangerOf(s.board);
-export const tilesLeft = (s: GameState): number => remaining(s.board);
+export const screwsRemaining = (s: GameState): number => screwsLeft(s.board);
+export type { Colour };
 export { challengeOf };

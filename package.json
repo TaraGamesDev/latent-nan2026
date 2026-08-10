@@ -14,8 +14,12 @@
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.116.0",
     "@types/node": "^26.2.0",
+    "@types/three": "^0.185.4",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
     "vite": "^6.0.5"
+  },
+  "dependencies": {
+    "three": "^0.185.1"
   }
 }

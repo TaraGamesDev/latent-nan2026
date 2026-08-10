@@ -16,22 +16,22 @@
  * is not.
  */
 
-import type { Board } from '../core/tiles';
-import { rankTakes, statsOf } from './solver';
+import type { Board } from '../core/plates';
+import { rankTurns, statsOf } from './solver';
 
 export interface SkillState {
   /** Overall ability, 0..1. What the assigner steers against. */
   theta: number;
   /** Picks taps that leave a workable tray, not just taps that clear now. */
   foresight: number;
-  /** Keeps the tray clean rather than hoarding lone faces. */
+  /** Keeps holders moving rather than hoarding half-filled ones. */
   efficiency: number;
   /** Decides quickly. */
   tempo: number;
 
   samples: number;
   regretEwma: number;
-  singlesEwma: number;
+  lonelyEwma: number;
   latencyEwma: number;
 }
 
@@ -40,8 +40,8 @@ export interface TapObservation {
   regret: number;
   /** How much the choice mattered. Near zero when everything was equivalent. */
   informativeness: number;
-  /** Lone faces left in the tray after the tap. */
-  singles: number;
+  /** Holders carrying a single screw at the moment of the decision. */
+  lonely: number;
   matched: boolean;
   latencyMs: number;
 }
@@ -53,16 +53,16 @@ export const createSkillState = (): SkillState => ({
   tempo: 0.5,
   samples: 0,
   regretEwma: 0.35,
-  singlesEwma: 1.6,
+  lonelyEwma: 1.0,
   latencyEwma: 1400,
 });
 
 /** Grade a tap against the position it was made from. */
-export function observeTap(before: Board, tileId: number, latencyMs: number): TapObservation | null {
-  const ranked = rankTakes(before);
+export function observeTap(before: Board, screwId: number, latencyMs: number): TapObservation | null {
+  const ranked = rankTurns(before);
   if (ranked.length === 0) return null;
 
-  const chosen = ranked.find((r) => r.tile.id === tileId);
+  const chosen = ranked.find((r) => r.screw.id === screwId);
   if (!chosen) return null;
 
   const best = ranked[0].value;
@@ -76,8 +76,8 @@ export function observeTap(before: Board, tileId: number, latencyMs: number): Ta
   return {
     regret,
     informativeness: informativeness * (best - median > 0.5 ? 1 : 0.4),
-    singles: statsOf(before).singles,
-    matched: chosen.matched,
+    lonely: statsOf(before).lonely,
+    matched: chosen.completes,
     latencyMs,
   };
 }
@@ -95,14 +95,15 @@ export function updateSkill(s: SkillState, obs: TapObservation): SkillState {
   const alpha = base * (0.35 + 0.65 * obs.informativeness);
 
   const regretEwma = mix(s.regretEwma, obs.regret, alpha);
-  const singlesEwma = mix(s.singlesEwma, obs.singles, Math.max(0.08, base));
+  const lonelyEwma = mix(s.lonelyEwma, obs.lonely, Math.max(0.08, base));
   const latencyEwma = mix(s.latencyEwma, Math.min(obs.latencyMs, 8000), Math.max(0.1, base));
 
   const foresight = clamp01(1 - regretEwma);
-  // Deliberately not "matches per tap": every tile is eventually taken and every
-  // third of a face clears, so that rate lands near a third for everybody. How
-  // many lone faces a player is willing to carry does separate them.
-  const efficiency = clamp01(1 - singlesEwma / 3.5);
+  // Deliberately not "completions per tap": every screw is eventually turned and
+  // every third of a colour completes a holder, so that rate lands near a third
+  // for everybody. How many half-filled holders a player is willing to carry
+  // does separate them.
+  const efficiency = clamp01(1 - lonelyEwma / 2.2);
   const tempo = clamp01(1 - (latencyEwma - 600) / 3400);
 
   // Foresight dominates: it is the only channel derived from a position-
@@ -112,7 +113,7 @@ export function updateSkill(s: SkillState, obs: TapObservation): SkillState {
   const confidence = samples / (samples + PRIOR_WEIGHT);
   const theta = clamp01(0.5 + (raw - 0.5) * confidence);
 
-  return { theta, foresight, efficiency, tempo, samples, regretEwma, singlesEwma, latencyEwma };
+  return { theta, foresight, efficiency, tempo, samples, regretEwma, lonelyEwma, latencyEwma };
 }
 
 /**
@@ -133,10 +134,10 @@ export const createMoodState = (): MoodState => ({ frustration: 0, boredom: 0 })
 export function updateMood(m: MoodState, obs: TapObservation, s: SkillState): MoodState {
   // A tap that does not clear is normal here, so frustration tracks regret and
   // a clogged tray rather than simply "that did not score".
-  const bad = Math.min(1, obs.regret * 0.7 + Math.min(1, obs.singles / 4) * 0.6);
+  const bad = Math.min(1, obs.regret * 0.7 + Math.min(1, obs.lonely / 2) * 0.6);
   const frustration = clamp01(mix(m.frustration, bad, 0.16));
 
-  const cruising = s.regretEwma < 0.2 && s.singlesEwma < 1.2 ? 1 : 0;
+  const cruising = s.regretEwma < 0.2 && s.lonelyEwma < 0.7 ? 1 : 0;
   const boredom = clamp01(mix(m.boredom, cruising, 0.12));
 
   return { frustration, boredom };

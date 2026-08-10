@@ -4,167 +4,204 @@
  * Two jobs. It scores a board so the player's tap can be ranked against the
  * best tap available from the identical position — that comparison is the
  * regret signal the skill estimator runs on — and it gives the assigner a way
- * to score the board each candidate face would produce.
+ * to judge the board each candidate colour would produce.
  *
- * Everything here avoids cloning the board. A take only changes the tray and
- * can only free the tiles directly underneath it, so the resulting position is
- * computed analytically. That keeps a full ranking under a tenth of a
- * millisecond, which is what lets the assigner run on every reveal.
+ * Nothing here clones the board. Turning a screw only touches the holders and
+ * can only free the screws under the plate it was holding, so the resulting
+ * position is computed analytically. A full ranking stays well under a tenth of
+ * a millisecond, which is what lets the assigner run on every reveal.
  */
 
 import {
   type Board,
-  type Face,
-  MATCH,
-  TRAY_SLOTS,
-  type Tile,
+  type Colour,
+  HOLDER_CAPACITY,
+  HOLDERS,
+  type Screw,
   UNDECIDED,
-  faceCounts,
-  isFree,
-} from '../core/tiles';
+  holderFor,
+  isReachable,
+} from '../core/plates';
 
 export interface PositionStats {
-  /** Slots left before the tray ends the run. */
-  headroom: number;
-  /** Tray faces sitting alone. Each holds a slot hostage. */
-  singles: number;
-  /** Tray faces with two of three. One tile away from clearing. */
-  pairs: number;
-  /** Tiles the player could tap right now. */
+  /** Holders standing empty. The only thing between the player and the end. */
+  free: number;
+  /** Holders carrying a single screw — each holds a slot until two more arrive. */
+  lonely: number;
+  /** Holders one screw from completing. */
+  ready: number;
+  /** Screws the player could turn right now. */
   choices: number;
-  /** Tiles still on the pile. */
+  /** Screws still on the wall. */
   remaining: number;
 }
 
 export function statsOf(b: Board): PositionStats {
-  let singles = 0;
-  let pairs = 0;
-  for (const v of faceCounts(b.tray).values()) {
-    if (v === 1) singles++;
-    else if (v === MATCH - 1) pairs++;
+  let free = 0;
+  let lonely = 0;
+  let ready = 0;
+  for (const h of b.holders) {
+    if (h.colour === UNDECIDED) free++;
+    else if (h.count === 1) lonely++;
+    else if (h.count === HOLDER_CAPACITY - 1) ready++;
   }
   let choices = 0;
   let remaining = 0;
-  for (const t of b.tiles) {
-    if (t.taken) continue;
+  for (const s of b.screws) {
+    if (s.removed) continue;
     remaining++;
-    if (isFree(b, t)) choices++;
+    if (s.colour !== UNDECIDED && isReachable(b, s)) choices++;
   }
-  return { headroom: TRAY_SLOTS - b.tray.length, singles, pairs, choices, remaining };
+  return { free, lonely, ready, choices, remaining };
 }
 
 /**
  * How healthy a board is for the player.
  *
- * Headroom dominates because the tray is the only thing that ends a run, and
- * singles are penalised harder than tray length alone would suggest: a tray of
- * three pairs is one tile from clearing three times over, while a tray of three
- * singles is three tiles from clearing anything.
+ * Free holders dominate because running out of them is the only way to lose,
+ * and lonely holders are penalised harder than occupancy alone would suggest: a
+ * holder with two in it is one screw from giving a slot back, while a holder
+ * with one is two screws away.
  */
 export function evaluate(s: PositionStats): number {
   return (
-    7.0 * s.headroom -
-    4.5 * s.singles +
-    2.0 * s.pairs +
+    9.0 * s.free -
+    5.0 * s.lonely +
+    3.0 * s.ready +
     0.5 * Math.min(s.choices, 12) -
-    0.08 * s.remaining
+    0.06 * s.remaining
   );
 }
 
-/** The tray after taking `face`, and whether that completed a set. */
-function trayAfter(tray: readonly Face[], face: Face): { tray: Face[]; matched: boolean } {
-  const next = [...tray, face];
-  const counts = faceCounts(next);
-  if ((counts.get(face) ?? 0) >= MATCH) {
-    let removed = 0;
-    for (let i = next.length - 1; i >= 0 && removed < MATCH; i--) {
-      if (next[i] === face) {
-        next.splice(i, 1);
-        removed++;
-      }
-    }
-    return { tray: next, matched: true };
-  }
-  return { tray: next, matched: false };
-}
+/** Reward for a screw that drops its plate: new screws, and a fresh assignment. */
+const DROP_REWARD = 3.5;
+/** Per screw of support a committed holder still has on the wall. */
+const SUPPORT_REWARD = 3.0;
+/** Per screw of support a committed holder is missing. */
+const ORPHAN_PENALTY = 4.5;
 
-export interface RankedTake {
-  tile: Tile;
-  /** Board value left behind, plus the reward for clearing. */
+export interface RankedTurn {
+  screw: Screw;
+  /** Board value left behind, plus the reward for completing a holder. */
   value: number;
-  matched: boolean;
-  /** Tiles this take would set free. */
-  opens: number;
+  completes: boolean;
+  /** Whether this opens a holder that was standing empty. */
+  opensHolder: boolean;
+  /** Plates this would drop, exposing more of the wall. */
+  drops: number;
 }
 
-const MATCH_REWARD = 9;
+const COMPLETE_REWARD = 10;
 
-/**
- * Every tap available, best first.
- *
- * Computed without cloning: the tray change is local, and the only tiles whose
- * freedom can change are the ones directly beneath the tile being taken.
- */
-export function rankTakes(b: Board): RankedTake[] {
-  const out: RankedTake[] = [];
+/** Every screw the player could turn, best first. */
+export function rankTurns(b: Board): RankedTurn[] {
+  const out: RankedTurn[] = [];
   const base = statsOf(b);
 
-  for (const tile of b.tiles) {
-    if (tile.face === UNDECIDED || tile.taken || !isFree(b, tile)) continue;
+  for (const screw of b.screws) {
+    if (screw.removed || screw.colour === UNDECIDED || !isReachable(b, screw)) continue;
 
-    const { tray, matched } = trayAfter(b.tray, tile.face);
+    const idx = holderFor(b, screw.colour);
+    if (idx === -1) continue; // Would end the run; never the best play.
 
-    let singles = 0;
-    let pairs = 0;
-    for (const v of faceCounts(tray).values()) {
-      if (v === 1) singles++;
-      else if (v === MATCH - 1) pairs++;
+    const target = b.holders[idx];
+    const wasEmpty = target.colour === UNDECIDED;
+    const after = target.count + 1;
+    const completes = after >= HOLDER_CAPACITY;
+
+    let free = base.free;
+    let lonely = base.lonely;
+    let ready = base.ready;
+    if (wasEmpty) {
+      free--;
+      lonely++;
+    } else if (target.count === 1) {
+      lonely--;
+      if (HOLDER_CAPACITY === 3) ready++;
+    } else if (target.count === HOLDER_CAPACITY - 1) {
+      ready--;
+    }
+    if (completes) free++;
+
+    // Only the plate this screw was holding can drop, and only if it was the
+    // last one in it.
+    let drops = 0;
+    let opened = 0;
+    const plate = b.plates[screw.plate];
+    if (plate.screws.every((id) => id === screw.id || b.screws[id].removed)) {
+      drops = 1;
+      // Anything directly beneath that plate becomes reachable.
+      for (const s2 of b.screws) {
+        if (s2.removed || s2.id === screw.id) continue;
+        const own = b.plates[s2.plate];
+        if (own.fallen || own.layer >= plate.layer) continue;
+        if (
+          s2.x >= plate.x &&
+          s2.x <= plate.x + plate.w &&
+          s2.y >= plate.y &&
+          s2.y <= plate.y + plate.h
+        ) {
+          opened++;
+        }
+      }
     }
 
-    // Only tiles resting under this one can become free.
-    let opens = 0;
-    for (const id of tile.unlocks) {
-      const under = b.tiles[id];
-      if (under.taken) continue;
-      if (under.above.every((a) => a === tile.id || b.tiles[a].taken)) opens++;
+    /*
+     * Can this holder actually be finished?
+     *
+     * This is the decision the game is really about, and leaving it out was a
+     * measurable mistake: with only board-shape terms, following this ranking
+     * scored *worse* than choosing at random, because it happily committed a
+     * holder to a colour with nothing left on the wall to finish it. A holder at
+     * two screws with no third in sight is not progress, it is a slot gone for
+     * the rest of the wall.
+     */
+    let support = 0;
+    for (const o of b.screws) {
+      if (o.removed || o.id === screw.id || o.colour !== screw.colour) continue;
+      if (isReachable(b, o)) support++;
     }
+    const needed = completes ? 0 : HOLDER_CAPACITY - after;
+    const covered = Math.min(support, needed);
 
-    const after: PositionStats = {
-      headroom: TRAY_SLOTS - tray.length,
-      singles,
-      pairs,
-      choices: base.choices - 1 + opens,
-      remaining: base.remaining - 1,
-    };
+    const value =
+      evaluate({
+        free,
+        lonely,
+        ready,
+        choices: base.choices - 1 + opened,
+        remaining: base.remaining - 1,
+      }) +
+      (completes ? COMPLETE_REWARD : 0) +
+      SUPPORT_REWARD * covered -
+      ORPHAN_PENALTY * (needed - covered) +
+      DROP_REWARD * drops;
 
-    out.push({
-      tile,
-      matched,
-      opens,
-      value: evaluate(after) + (matched ? MATCH_REWARD : 0),
-    });
+    out.push({ screw, value, completes, opensHolder: wasEmpty, drops });
   }
 
   out.sort((p, q) => q.value - p.value);
   return out;
 }
 
-export function bestTake(b: Board): RankedTake | null {
-  const r = rankTakes(b);
+export function bestTurn(b: Board): RankedTurn | null {
+  const r = rankTurns(b);
   return r.length > 0 ? r[0] : null;
 }
 
 /**
- * How hard the position reads, 0 (comfortable) to 1 (about to die).
+ * How hard the position reads, 0 (comfortable) to 1 (about to end).
  *
- * The number the director steers by, and the one drawn on the flow-channel
+ * The number the assigner steers by, and the one drawn on the flow-channel
  * graph as "realised difficulty".
  */
 export function challengeOf(b: Board): number {
   const s = statsOf(b);
-  const fromRoom = 1 - s.headroom / TRAY_SLOTS;
-  const fromSingles = Math.min(1, s.singles / 4);
-  const fromChoice = 1 - Math.min(1, s.choices / 10);
-  const v = 0.42 * fromRoom + 0.4 * fromSingles + 0.18 * fromChoice;
+  const fromRoom = 1 - s.free / HOLDERS;
+  const fromLonely = Math.min(1, s.lonely / HOLDERS);
+  const fromChoice = 1 - Math.min(1, s.choices / 8);
+  const v = 0.44 * fromRoom + 0.38 * fromLonely + 0.18 * fromChoice;
   return v < 0 ? 0 : v > 1 ? 1 : v;
 }
+
+export type { Colour };

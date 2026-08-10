@@ -6,14 +6,14 @@
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover"
     />
-    <title>LATENT — 덮인 타일은 아직 정해져 있지 않습니다</title>
+    <title>LATENT — 덮인 나사는 아직 색이 없습니다</title>
     <meta
       name="description"
-      content="레벨을 미리 만들지 않는 퍼즐. 타일이 드러나는 순간, AI가 당신의 상황을 보고 무늬를 결정합니다."
+      content="레벨을 미리 만들지 않는 해체 퍼즐. 판이 떨어져 나사가 드러나는 순간, AI가 당신의 상황을 보고 색을 결정합니다."
     />
     <meta name="theme-color" content="#090b11" />
-    <script type="module" crossorigin src="./assets/index-BLnyQJ0r.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-Dj-aM-tO.css">
+    <script type="module" crossorigin src="./assets/index-C6lScen6.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-DGGiJdc4.css">
   </head>
   <body>
     <div id="app">
@@ -21,7 +21,7 @@
         <div class="hud-top">
           <div class="brand">
             <span class="brand-name">LATENT</span>
-            <span class="brand-sub">WRITTEN AS YOU PLAY</span>
+            <span class="brand-sub">UNBOLT · WRITTEN AS YOU PLAY</span>
           </div>
           <button id="panel-toggle" class="ghost-btn" aria-expanded="false">
             AI 패널 <kbd>D</kbd>
@@ -34,11 +34,11 @@
             <span class="stat-value" id="score">0</span>
           </div>
           <div class="stat">
-            <span class="stat-label">레벨</span>
+            <span class="stat-label">벽</span>
             <span class="stat-value" id="level">1</span>
           </div>
           <div class="stat stat-wide">
-            <span class="stat-label">트레이 위험 <b id="danger-pct">0%</b></span>
+            <span class="stat-label">홀더 위험 <b id="danger-pct">0%</b></span>
             <div class="meter"><i id="danger-bar"></i></div>
           </div>
         </div>
@@ -46,19 +46,19 @@
 
       <main class="stage">
         <div class="board-wrap">
-          <canvas id="board" aria-label="타일 더미와 트레이"></canvas>
+          <canvas id="board" aria-label="볼트로 고정된 철판 벽과 나사 홀더"></canvas>
         </div>
         <p class="hint" id="hint"></p>
       </main>
 
       <section id="gameover" class="overlay" hidden>
         <div class="overlay-card">
-          <h2 id="go-title">트레이가 가득 찼습니다</h2>
+          <h2 id="go-title">홀더가 가득 찼습니다</h2>
           <div class="go-stats">
             <div><span>점수</span><b id="go-score">0</b></div>
-            <div><span>클리어한 레벨</span><b id="go-levels">0</b></div>
+            <div><span>해체한 벽</span><b id="go-levels">0</b></div>
             <div><span>탭</span><b id="go-taps">0</b></div>
-            <div><span>완성</span><b id="go-matches">0</b></div>
+            <div><span>홀더 완성</span><b id="go-matches">0</b></div>
           </div>
           <p class="go-read" id="go-read"></p>
           <button id="restart" class="primary-btn">다시 하기</button>
