@@ -2,157 +2,179 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>CADENCE — AI 활용 기술 문서</title>
+    <title>LATENT — AI 활용 기술 문서</title>
     <link rel="stylesheet" href="doc-style.css" />
   </head>
   <body>
     <div class="cover">
       <p class="eyebrow">NHN GAME × AI 해커톤 · NAN 2026 · 사전과제 제출물 ④</p>
       <h1>AI 활용 기술 문서</h1>
-      <p class="tagline">CADENCE — 매 탭마다 다음 순간을 설계하는 AI 디렉터</p>
+      <p class="tagline">LATENT — 레벨을 미리 만들지 않는 퍼즐</p>
       <div class="meta">
-        <span><b>저장소</b> github.com/TaraGamesDev/cadence-nan2026</span>
+        <span><b>저장소</b> github.com/TaraGamesDev/latent-nan2026</span>
         <span><b>참가</b> 개인</span>
       </div>
     </div>
 
-    <h2>1. 요약</h2>
+    <h2>1. 한 문장</h2>
     <p class="lead">
-      대부분의 “AI로 만든 게임”은 AI를 <strong>개발 도구</strong>로 씁니다. 이 프로젝트에서
-      AI는 <strong>제품 안에서 돌아가는 시스템</strong>입니다.
+      캐주얼 퍼즐의 원가는 레벨 뱅크이고, 그 원가에서 비싼 쪽은 <strong>만드는 일이 아니라
+      만든 레벨이 풀리는지 검증하는 일</strong>입니다. <strong>레벨을 미리 만들지 않으면 그
+      검증 단계가 통째로 사라집니다.</strong>
     </p>
     <p>
-      플레이어가 화면을 누를 때마다 — 초당 한 번꼴로 — 시스템은 그 한 번의 선택을 솔버의
-      최선수와 비교해 채점하고, 갱신된 실력 추정으로 <strong>다음 순간이 어떤 난이도여야
-      하는지</strong>를 정한 뒤, 그 의도를 만족하는 화살표 배치를 탐색해 보드에 놓습니다.
-      레벨을 미리 만들어 두지 않습니다. 매 순간을 그 자리에서 설계합니다.
+      LATENT의 타일은 덮여 있는 동안 무늬가 없습니다. 관측되지 않았으니 아직 존재할 이유가
+      없습니다. 위가 걷혀 드러나는 순간, AI가 플레이어의 그 시점 상황을 읽고 무늬를 씁니다 —
+      그때 <strong>“이 레벨은 끝까지 클리어 가능한가”를 부등식 하나로 보장</strong>하면서.
+      사후 검증이 필요 없습니다. 애초에 불가능한 상태를 만들지 않기 때문입니다.
+    </p>
+
+    <h2>2. 왜 이 방향인가 — 비싼 것은 생성이 아니라 검증</h2>
+    <p>
+      소코반 레벨 자동 생성은 <strong>논문 주제</strong>입니다. MCTS로 생성하고, 난이도는
+      “문제 분해 지표”나 “사람의 탐색을 흉내낸 계산 모델”로 <em>추정</em>합니다. 이유는
+      단순합니다 — <strong>소코반은 PSPACE-complete</strong>라 만든 레벨이 풀리는지, 얼마나
+      어려운지를 싸게 알 방법이 없습니다. 그래서 사람이 검수해야 하고, 그게 원가입니다.
     </p>
     <div class="callout">
       <p>
-        <strong>런타임에 LLM 호출은 한 번도 일어나지 않습니다.</strong> 배포되는 게임은
-        전부 결정론적 코드이며 네트워크·API 키·계정이 필요 없습니다. LLM은 오프라인 정책
-        설계·튜닝 단계에만 사용했고, 그 산출물은 상수로 빌드에 구워져 있습니다. 자세한
-        사용 내역은 <strong>5장</strong>에 빠짐없이 기재했습니다.
+        그러므로 장르 선택의 기준은 “재미있을까”가 아니라 <strong>“난이도와 풀림을 근사가
+        아니라 정확히, 싸게 알 수 있는가”</strong>가 됩니다. 이 축으로 후보 셋을 직접
+        구현해 재고 골랐습니다.
       </p>
     </div>
 
-    <h2>2. 아키텍처</h2>
-    <div class="pipeline">플레이어의 탭
+    <h3>2.1 후보 비교 (측정값)</h3>
+    <table>
+      <thead>
+        <tr><th style="width:26%">후보</th><th class="num">검증 처리량</th><th>정확성</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>A · STAMP</strong><br />GF(2) 토글 퍼즐</td>
+          <td class="num">85,228<br />레벨/초</td>
+          <td><strong>완전 정확.</strong> 가우스 소거 한 번으로 풀림 여부·최소 수·<strong>해의 개수(2^영공간차원)</strong>가 전부 나옵니다. 유일해 레벨은 풀리는 것의 37%.</td>
+        </tr>
+        <tr>
+          <td><strong>B · MAGNET</strong><br />당겨 붙이는 퍼즐</td>
+          <td class="num">26<br />레벨/초</td>
+          <td><strong>불완전.</strong> 레벨당 탐색 노드 28,988개. 깊이 6에서 6.7%만 풀리고, 나머지는 “안 풀린다”가 아니라 <em>모른다</em>입니다.</td>
+        </tr>
+        <tr>
+          <td><strong>C · 타일 + 지연 결정</strong><br />(채택)</td>
+          <td class="num">470,000<br />결정/초</td>
+          <td><strong>검증 단계가 없음.</strong> 배정 시점의 부등식으로 클리어 가능성이 구성상 보장됩니다.</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      <strong>B가 A보다 3,300배 느립니다.</strong> 이것이 이 프로젝트가 하려는 이야기의
+      축소판입니다. 소스는 <code>src/probe/</code>에 그대로 있고
+      <code>npx tsx src/probe/a-stamp.ts</code> 등으로 재현됩니다.
+    </p>
+    <p>
+      A는 “난이도를 정확히 계산한다”는 주장이 가장 강했지만 C를 골랐습니다. 이유는
+      <strong>검증 비용을 0으로 만드는 쪽이 더 근본적이기 때문</strong>이고, 시장에서 검증된
+      장르 위에서 그렇게 할 수 있기 때문입니다.
+    </p>
+
+    <h2>3. 아키텍처</h2>
+    <div class="pipeline">타일이 드러날 때마다
    │
-   ├─▶ [스킬 추정기]  src/ai/skill.ts
+   ├─▶ [스킬 추정기]   src/ai/skill.ts
    │     regret = value(솔버의 최선수) − value(플레이어가 고른 수)
-   │     → θ(숙련도), {계획성 · 효율 · 템포}, {좌절도 · 지루함}
+   │     → θ(숙련도), {계획성 · 정돈 · 템포}, {좌절도 · 지루함}
    │
-   ├─▶ [AI 디렉터]    src/ai/director.ts   ← 의도
-   │     θ + 감정 + 강도 램프 → 플로우 채널 목표
-   │     제약조건 발행: 목표 난이도 / 스폰 수 / 탈출로 선호 깊이
-   │                    / 중앙 편향 / 방향 다양성
+   ├─▶ [배정기 · 의도]  src/ai/assigner.ts
+   │     θ + 감정 + 레벨 진행 램프 → 목표 난이도
+   │     트레이 위험도가 높으면 목표와 무관하게 구제
+   │     후보: 즉시완성 / 짝만들기 / 보드와짝 / 새무늬
    │
-   ├─▶ [생성기 + 솔버] src/ai/director.ts + src/ai/solver.ts   ← 시공
-   │     후보 배치 40개 샘플링 → 각각 솔버로 검증·채점 → 승자 선택
-   │     ★ 불변식: 스폰 직후 반드시 최소 1수는 움직일 수 있다
+   ├─▶ [배정기 · 시공]  같은 파일
+   │     ★ 미결정 타일 수 ≥ 3의 배수를 맞추는 데 필요한 타일 수
+   │     이 부등식을 깨는 후보는 기각됩니다
    │
    └─▶ [글래스박스 패널] src/ui/panel.ts
          위 전부를 화면에 그대로 노출</div>
 
     <table>
-      <thead>
-        <tr><th style="width:26%">모듈</th><th>역할</th></tr>
-      </thead>
+      <thead><tr><th style="width:26%">모듈</th><th>역할</th></tr></thead>
       <tbody>
-        <tr><td><code>core/grid.ts</code></td><td>보드 상태와 이동 규칙. 순수 함수, 할당 없음.</td></tr>
-        <tr><td><code>core/rng.ts</code></td><td>시드 기반 PRNG. 모든 확률적 결정이 여기서 나오므로 <strong>시드만 있으면 런 전체가 재현</strong>됩니다.</td></tr>
-        <tr><td><code>ai/solver.ts</code></td><td>국면 평가, 탈출 폐포, 빔 서치 체인 탐색, 데드락 위험도.</td></tr>
-        <tr><td><code>ai/skill.ts</code></td><td>수순당 후회 → 숙련도 추정. 느리게 움직이는 실력과 빠르게 움직이는 감정을 분리.</td></tr>
-        <tr><td><code>ai/director.ts</code></td><td>제약조건 발행 + 제약 기반 스폰 생성.</td></tr>
-        <tr><td><code>ai/policy.ts</code></td><td>오프라인 튜닝으로 적합된 상수. 빌드에 구워짐.</td></tr>
-        <tr><td><code>ai/bots.ts</code></td><td>봇 페르소나. 콜드스타트 문제의 해법.</td></tr>
+        <tr><td><code>core/tiles.ts</code></td><td>더미 기하, 덮임 관계, 트레이 규칙</td></tr>
+        <tr><td><code>core/rng.ts</code></td><td>시드 기반 PRNG — 시드만 있으면 런 전체가 재현됩니다</td></tr>
+        <tr><td><code>ai/solver.ts</code></td><td>국면 평가와 수순 순위. 보드를 복제하지 않고 해석적으로 계산합니다</td></tr>
+        <tr><td><code>ai/skill.ts</code></td><td>수순당 후회 → 숙련도 추정, 감정 상태 분리</td></tr>
+        <tr><td><code>ai/assigner.ts</code></td><td>무늬 결정 + 완결성 검사</td></tr>
+        <tr><td><code>ai/policy.ts</code></td><td>정책 상수. 빌드에 구워짐</td></tr>
+        <tr><td><code>ai/bots.ts</code></td><td>봇 페르소나 — 콜드스타트 문제의 해법</td></tr>
+        <tr><td><code>probe/</code></td><td>2.1의 후보 비교를 재현하는 실측 코드</td></tr>
       </tbody>
     </table>
 
-    <h2>3. 핵심 설계 세 가지</h2>
+    <h2>4. 핵심 설계 세 가지</h2>
 
-    <h3>3.1 수순당 후회(regret)로 실력을 잰다</h3>
+    <h3>4.1 수순당 후회(regret)로 실력을 잰다</h3>
     <p>
-      “레벨을 클리어했는가”는 몇 분에 한 번 도착하고, 그 레벨이 마침 쉬웠는지에 오염됩니다.
-      대신 <strong>모든 탭을, 그 탭이 이루어진 바로 그 국면에서</strong> 채점합니다.
+      “레벨을 클리어했는가”, “몇 분 걸렸는가”는 몇 분에 한 번 도착하고 그 레벨이 마침
+      쉬웠는지에 오염됩니다. 대신 <strong>모든 탭을, 그 탭이 이루어진 바로 그 국면에서</strong>
+      채점합니다.
     </p>
     <pre><code>regret = (최선수의 가치 − 플레이어가 고른 수의 가치)
          ────────────────────────────────────────
               그 국면에서의 선택지 가치 편차</code></pre>
     <p>
-      국면이 통제되어 있으므로 “쉬운 판이라 잘한 것”과 “실제로 잘 둔 것”이 섞이지 않습니다.
-      선택지가 전부 동등한 국면은 <strong>정보량 0</strong>으로 처리해 추정을 흔들지 않습니다.
-      낯선 사람을 빠르게 파악해야 하므로 초반 학습률은 높고, 표본이 쌓이면
-      <code>samples / (samples + 10)</code> 비율로 사전확률에서 벗어납니다.
+      국면이 통제되어 있으므로 “쉬워서 잘한 것”과 “실제로 잘 둔 것”이 섞이지 않습니다.
+      선택지가 전부 동등한 국면은 <strong>정보량 0</strong>으로 처리해 추정을 흔들지 않고,
+      표본이 쌓일 때까지는 <code>samples / (samples + 10)</code> 비율로 사전확률에서
+      벗어납니다 — 첫 판부터 최대 압박이 걸리지 않도록.
     </p>
 
-    <h3>3.2 의도와 시공을 분리한다</h3>
+    <h3>4.2 의도와 시공을 분리한다</h3>
     <p>
-      디렉터는 화살표를 직접 놓지 않습니다. <strong>“지금 이 순간이 어떻게 느껴져야 하는가”</strong>를
-      제약조건으로 발행할 뿐이고, 실제 배치는 생성기가 샘플링하고 솔버가 검증합니다.
-    </p>
-    <p>
-      <strong>플레이어를 평가하는 쪽은 heuristic이어도 되지만, 보드를 건드리는 쪽은 틀리면 안 되기
-      때문입니다.</strong> 추정이 어긋나면 난이도가 약간 안 맞을 뿐이지만, 배치가 잘못되면
-      게임이 망가집니다. 두 관심사를 코드 수준에서 분리해 두면 전자는 자유롭게 실험할 수 있고
-      후자는 정확히 검사할 수 있습니다.
+      배정기는 <em>“지금 이 순간이 어떻게 느껴져야 하는가”</em>만 정합니다. 실제로 무늬를
+      쓰기 전에 완결성 부등식이 <strong>별도로</strong> 검사합니다.
+      <strong>플레이어를 평가하는 쪽은 틀려도 되지만, 타일을 쓰는 쪽은 틀리면 안 되기
+      때문입니다.</strong> 추정이 어긋나면 난이도가 조금 안 맞을 뿐이지만, 배정이 잘못되면
+      그 레벨은 영원히 클리어할 수 없습니다.
     </p>
 
-    <h3>3.3 약속은 작게, 대신 반드시 지킨다</h3>
-    <p>
-      초기 버전은 <em>“탈출 4수 보장”</em>을 약속했습니다. 벤치를 돌려보니
-      <strong>1~2개 스폰으로는 구성 자체가 불가능한 약속</strong>이었고, 60런에서 15,829회
-      위반했습니다. 그래서 선호로 강등하고, 증명 가능한 것만 불변식으로 남겼습니다.
-    </p>
+    <h3>4.3 약속은 작게, 대신 반드시 지킨다</h3>
     <div class="callout">
-      <p><strong>불변식 — 디렉터가 스폰한 직후, 반드시 최소 1수는 움직일 수 있다.</strong></p>
+      <p><strong>불변식 — 이 레벨은 끝까지 클리어 가능하다.</strong></p>
       <p>
-        모든 후보 배치에 대해 <em>정확히</em> 검사합니다. 어떤 배치도 통과하지 못하면
-        스폰 수를 줄이지, 불변식을 깨지 않습니다. 플레이어는 <strong>자기 선택으로는 질 수
-        있어도, 디렉터 때문에 지지는 않습니다.</strong>
+        모든 무늬는 최종적으로 3의 배수가 되어야 합니다. 그러지 못하면 남은 타일은 영원히
+        사라지지 않습니다. 그래서 매 배정마다
+        <code>미결정 타일 수 ≥ 열려 있는 무늬를 닫는 데 필요한 타일 수</code>를 검사하고,
+        이를 깨는 후보는 기각합니다.
       </p>
     </div>
     <p>
-      샘플링은 품질을 희생할 뿐 정확성을 희생하지 않습니다. 후보 공간은
-      <code>(빈 칸 중 n개 선택) × 4ⁿ</code>이라 매 탭 전수 탐색이 불가능하지만, 살아남은
-      후보에 대한 불변식 검사는 근사가 아니라 실제 계산입니다.
+      <strong>다만 질 수는 있습니다. 그래야 맞습니다.</strong> 계산해 보면 절대 지지 않게
+      만드는 것은 불가능합니다 — 보이는 무늬가 k종이면 최악의 경우 각 2장씩 2k장까지 쌓이므로
+      k가 4만 되어도 7칸이 찹니다. k를 3으로 묶으면 게임이 무의미해집니다. 그래서 지는 것은
+      <strong>플레이어의 선택</strong>이지 배정의 실패가 아닙니다. 이 구분을 문서와 패널
+      양쪽에서 일부러 지켰습니다.
     </p>
 
-    <h3>보조 설계: 강도 램프</h3>
+    <h2>5. 글래스박스 — AI가 자기 판단을 보여준다</h2>
     <p>
-      플로우 채널만으로는 런이 끝나지 않습니다. 초기 벤치에서 유능한 봇이
-      <strong>4,000탭 동안 죽지 않고 4천만 점</strong>을 기록했습니다. 디렉터가 플레이어를 너무
-      잘 살린 탓입니다. 그래서 실력과 무관하게 오르는 전역 강도
-      <code>intensity = 1 − e^(−탭/77)</code>를 도입했습니다. 플로우 채널이 <em>순간의 체감</em>을
-      잡고, 램프가 <em>런이 반드시 끝나게</em> 만듭니다.
-    </p>
-
-    <h2>4. 글래스박스 — AI가 자기 판단을 보여준다</h2>
-    <p>
-      조용히 도와주는 난이도 시스템은 <strong>자기 작업을 보여줄 수 있는 시스템보다 가치가
-      낮습니다.</strong> 그래서 디렉터가 마지막 결정에 사용한 모든 것이 화면에 있습니다.
+      조용히 결정하는 시스템은 <strong>자기 작업을 보여줄 수 있는 시스템보다 가치가
+      낮습니다.</strong> 특히 이 장르는 플레이어들이 “게임이 나를 조작한다”고 의심하는 것으로
+      유명합니다. 그렇다면 숨길 것이 아니라 열어 두는 편이 낫습니다.
     </p>
     <figure>
-      <img src="img/panel.png" alt="AI 디렉터 패널" />
+      <img src="img/panel.png" alt="AI 배정기 패널" />
       <figcaption>
-        실제 플레이 중 캡처. 좌: 보드 위 <strong>①②</strong> 배지는 솔버가 증명한 탈출 체인입니다.
-        우: 38탭 관측 시점의 추정(θ 71%, 계획성 62%, 효율 100%), 플로우 채널 그래프,
-        이번 스폰의 판단 근거, <strong>검토된 후보 4개와 채택되지 않은 대안들</strong>,
-        그리고 불변식 검증 결과 — “후보 37개 검토 · 0개 기각”.
+        실제 플레이 중 캡처. 좌: 색이 있는 타일은 무늬가 결정된 것, 점선은
+        <strong>아직 무늬가 없는</strong> 타일. 우: 22탭 관측 시점의 추정(θ 75%, 계획성 84%,
+        정돈 86%), 플로우 채널, 방금 쓴 타일의 근거, 그리고 <strong>후보 무늬 비교표</strong> —
+        여기서 #1과 #2가 <strong>완결성 ‘불가’로 기각</strong>된 것이 보입니다. 불변식이 실제로
+        후보를 자르고 있다는 증거입니다. 맨 아래에 “미결정 타일 4개 ≥ 완성에 필요한 4개 ·
+        후보 3개 기각”.
       </figcaption>
     </figure>
-    <p>
-      후보 비교표가 특히 중요합니다. 각 행은 실제로 평가된 배치이고, 열은 그 배치가 만들
-      난이도·보장 탈출 체인·가동 수·최종 점수입니다. 심사자는 AI가 <em>무엇을 골랐는지</em>뿐
-      아니라 <em>무엇을 버렸는지</em>까지 볼 수 있습니다.
-    </p>
 
-    <h2>5. AI 도구 사용 내역</h2>
-    <p>
-      사용한 도구와 활용 내역을 과장 없이 기재합니다.
-    </p>
-
+    <h2>6. AI 도구 사용 내역</h2>
     <table>
       <thead>
         <tr><th style="width:20%">단계</th><th style="width:24%">사용 도구</th><th>내용</th></tr>
@@ -161,192 +183,119 @@
         <tr>
           <td><strong>런타임<br />(배포 빌드)</strong></td>
           <td>없음</td>
-          <td><strong>LLM 호출 없음.</strong> 게임 안의 “AI”는 전부 결정론적 코드 — 솔버, 추정기, 디렉터. 네트워크·API 키·계정 불필요.</td>
+          <td><strong>LLM 호출 없음.</strong> 게임 안의 “AI”는 전부 결정론적 코드 — 솔버, 추정기, 배정기. 네트워크·API 키·계정 불필요.</td>
         </tr>
         <tr>
-          <td><strong>개발</strong></td>
+          <td><strong>설계·구현</strong></td>
           <td>Claude Code<br />(<code>claude-opus-5</code>)</td>
-          <td>코딩 협업 도구로 사용. 게임 규칙 설계 토론, 엔진·AI·UI 구현, 헤드리스 벤치 작성, 설계 결함 진단. 아래 5.2 참조.</td>
-        </tr>
-        <tr>
-          <td><strong>오프라인 튜닝</strong></td>
-          <td>결정론적 탐색<br />(+ LLM 탐색 구현)</td>
-          <td>디렉터 정책 상수 적합. 현재 빌드에 반영된 값은 <strong>결정론적 탐색</strong> 결과입니다. LLM 유도 탐색도 동일 목적함수로 구현되어 있습니다 — 5.3 참조.</td>
+          <td>코딩 협업 도구. 규칙 설계 토론, 엔진·AI·UI 구현, 헤드리스 계측 도구 작성, 설계 결함 진단. 6.2 참조.</td>
         </tr>
         <tr>
           <td><strong>에셋 생성</strong></td>
           <td>없음</td>
-          <td>이미지·사운드·폰트를 <strong>생성하지도, 사용하지도 않았습니다.</strong> 모든 그래픽은 Canvas API로 코드가 직접 그립니다.</td>
+          <td>이미지·사운드·폰트를 <strong>생성하지도, 사용하지도 않았습니다.</strong> 모든 그래픽은 Canvas 2D로 코드가 직접 그립니다.</td>
         </tr>
       </tbody>
     </table>
 
-    <h3>5.1 런타임에 LLM을 쓰지 않은 이유</h3>
-    <p>
-      의도적인 설계 결정입니다. 세 가지 이유가 있습니다.
-    </p>
+    <h3>6.1 런타임에 LLM을 쓰지 않은 이유</h3>
     <ul>
       <li>
-        <strong>심사자가 링크만 눌러도 돌아가야 합니다.</strong> 사전과제 요건은 “별도 유료
-        라이선스 없이 심사자가 실행할 수 있어야 한다”입니다. 런타임 LLM은 API 키를 요구하고,
-        키가 없으면 게임 자체가 죽습니다.
+        <strong>심사자가 링크만 눌러도 돌아가야 합니다.</strong> 사전과제 요건이 “별도 유료
+        라이선스 없이 실행 가능”입니다. 런타임 LLM은 키가 없으면 게임 자체가 죽습니다.
       </li>
       <li>
-        <strong>매 탭 = 초당 한 번의 판단입니다.</strong> 이 빈도에서 네트워크 왕복은 게임을
-        성립시키지 못합니다. 실제 측정된 디렉터 지연은 탭당 평균 0.18ms입니다.
+        <strong>결정이 초당 수십 회입니다.</strong> 타일 하나가 드러날 때마다 판단하므로
+        네트워크 왕복이 성립하지 않습니다. 측정된 배정 지연은 탭당 평균 0.015ms입니다.
       </li>
       <li>
-        <strong>보드를 건드리는 코드는 틀리면 안 됩니다.</strong> 3.2에서 설명한 분리 원칙에
-        따라, LLM은 <em>정책을 설계하는 자리</em>에 두고 <em>보드에 화살표를 놓는 자리</em>에는
-        두지 않았습니다.
+        <strong>타일을 쓰는 코드는 틀리면 안 됩니다.</strong> 4.2의 분리 원칙에 따라, LLM은
+        <em>정책을 설계하는 자리</em>에 두고 <em>타일에 무늬를 쓰는 자리</em>에는 두지
+        않았습니다.
       </li>
     </ul>
 
-    <h3>5.2 개발 단계의 AI 활용</h3>
+    <h3>6.2 개발 단계의 AI 활용과 실제 지시</h3>
     <p>
-      Claude Code를 코딩 협업 도구로 사용했습니다. 핵심 게임 규칙(“막히면 그 자리에 멈춘다”),
-      장르 선택, 스코프 결정은 사람이 내렸고, AI는 구현·진단·검증 자동화를 담당했습니다.
+      게임 규칙, 장르 선택, 스코프 결정은 사람이 내렸고, AI는 구현·계측·진단을 담당했습니다.
+      작업 방식에서 결정적이었던 지시는 두 가지입니다.
     </p>
-    <p>
-      작업 방식에서 가장 중요했던 지시는 <strong>“UI를 만들기 전에 헤드리스로 엔진을
-      검증한다”</strong>였습니다. 이 한 가지가 세 개의 설계 결함을 화면에 닿기 전에 잡아냈습니다
-      (6장). 커밋 기록에 각 결함과 그 진단 과정이 남아 있습니다.
-    </p>
-
-    <h3>5.3 오프라인 튜닝의 LLM 프롬프트</h3>
-    <p>
-      <code>src/tools/tune.ts</code>는 두 가지 탐색을 <strong>같은 예산과 같은 목적함수</strong>로
-      나란히 돌리도록 구현되어 있습니다: 균등 샘플링(<code>random</code>)과, 지금까지의 시행
-      결과를 보고 다음 후보를 제안하는 LLM 유도 탐색(<code>llm</code>). 둘을 동시에 보고하는
-      것이 요점입니다 — LLM 탐색만 돌리면 LLM이 <em>도움이 되었는지</em>를 말할 수 없습니다.
-    </p>
-    <p>LLM 제안자에게 주는 시스템 프롬프트 전문입니다 (저장소 <code>src/tools/tune.ts</code>).</p>
-    <pre><code>You are tuning the policy constants of a dynamic difficulty
-director for a real-time arrow puzzle game.
-
-The director runs once per player tap. It estimates the player's
-skill from per-tap regret against a solver, derives a target
-challenge level, and then a generator samples candidate arrow
-spawns and picks whichever best matches that target. Your job is
-to choose the constants that govern the derivation.
-
-Objective (lower loss is better). Loss combines, over three bot
-personas (novice, casual, expert):
-- trackingError: |realised challenge - the director's own target|.
-  The generator failing to deliver the director's intent.
-- frustratedFraction / boredFraction: time spent outside the
-  flow channel.
-- session length outside 60..130 taps, penalised proportionally.
-- MINUS 4x separation, where separation = expert's mean realised
-  challenge - novice's. A director that gives everyone the same
-  difficulty has failed.
-
-Propose diverse candidates. Exploit what the trials show, but keep
-exploring - identical-looking candidates waste the budget. Respect
-every stated range.</code></pre>
-    <p>
-      모델은 <code>claude-opus-5</code>이며, 응답은 구조화 출력(<code>output_config.format</code>)으로
-      JSON 스키마를 강제해 파싱 실패 가능성을 제거했습니다. 매 라운드 <em>지금까지의 최상위
-      시행 + 최근 시행</em>을 실제 수치와 함께 보내고 다음 후보 6개를 받습니다.
-    </p>
-    <div class="callout warn">
+    <div class="callout">
+      <p><strong>“UI를 만들기 전에 헤드리스로 엔진을 검증한다.”</strong></p>
       <p>
-        <strong>현재 빌드에 반영된 값은 결정론적 탐색의 결과입니다.</strong> LLM 유도 탐색은
-        구현·검증되어 있으나, 본 문서 작성 시점의 튜닝 실행에서는 실행 환경에 API 키가
-        설정되어 있지 않아 인증 단계에서 중단되었습니다. 키가 있으면
-        <code>npm run tune</code> 한 번으로 두 탐색의 비교가 재현됩니다.
-        과장하지 않기 위해 그대로 적습니다.
+        보고만 하는 벤치가 아니라 <strong>단언</strong>하는 벤치를 만들게 했습니다. 이 한
+        가지가 여러 설계 결함을 화면에 닿기 전에 잡아냈습니다 (7.1).
       </p>
     </div>
+    <div class="callout">
+      <p><strong>“재미있는지는 짐작하지 말고 계측한다.”</strong></p>
+      <p>
+        <code>src/probe/</code>의 후보 비교와, 이전 규칙을 폐기하게 만든 의사결정 깊이 진단이
+        여기서 나왔습니다. 초기 시안은 <strong>턴당 선택지 2.5개, 그중 58%가 최선수와
+        동점</strong>으로 측정되어 폐기됐습니다 — 재미없다는 <em>느낌</em>이 아니라 수치로.
+      </p>
+    </div>
+    <p>
+      전체 진행은 저장소 커밋 기록에 남아 있습니다. 규칙을 여러 차례 갈아엎는 동안
+      <strong>AI 층(추정기·글래스박스·벤치·페르소나)은 한 번도 재작성되지 않았습니다</strong> —
+      이 프로젝트의 자산이 어디에 있는지 보여주는 사실이라고 생각합니다.
+    </p>
 
-    <h2>6. 검증</h2>
+    <h2>7. 검증</h2>
     <p>
       <code>npm run bench</code>는 봇 페르소나로 전체 게임을 <strong>실제 <code>tap()</code>
-      경로</strong>를 통해 돌립니다. 심사자가 플레이하는 바로 그 코드에서 나온 수치입니다.
-      보고만 하는 것이 아니라 세 가지를 <strong>단언</strong>합니다.
+      경로</strong>로 돌립니다. 심사자가 플레이하는 바로 그 코드에서 나온 수치입니다.
+      50런 × 3페르소나:
     </p>
-
     <table>
       <thead>
-        <tr>
-          <th>페르소나</th><th class="num">점수</th><th class="num">탭</th>
-          <th class="num">탈출</th><th class="num">잼</th><th class="num">최고 콤보</th>
-          <th class="num">θ</th><th class="num">탭당 ms</th>
-        </tr>
+        <tr><th>페르소나</th><th class="num">클리어 레벨</th><th class="num">점수</th><th class="num">탭</th><th class="num">완성</th><th class="num">외톨이</th><th class="num">θ</th><th class="num">탭당 ms</th></tr>
       </thead>
       <tbody>
-        <tr><td>novice</td><td class="num">6,736</td><td class="num">267.8</td><td class="num">207.8</td><td class="num">51.9</td><td class="num">16.1</td><td class="num">0.702</td><td class="num">0.11</td></tr>
-        <tr><td>casual</td><td class="num">9,312</td><td class="num">115.3</td><td class="num">103.3</td><td class="num">5.9</td><td class="num">40.8</td><td class="num">0.801</td><td class="num">0.17</td></tr>
-        <tr><td>expert</td><td class="num">26,557</td><td class="num">117.3</td><td class="num">112.7</td><td class="num">0.9</td><td class="num">91.5</td><td class="num">0.864</td><td class="num">0.18</td></tr>
+        <tr><td>novice</td><td class="num">1.44</td><td class="num">1,656</td><td class="num">89</td><td class="num">27.4</td><td class="num">1.68</td><td class="num">0.559</td><td class="num">0.032</td></tr>
+        <tr><td>casual</td><td class="num">6.26</td><td class="num">10,643</td><td class="num">494</td><td class="num">162.2</td><td class="num">1.16</td><td class="num">0.629</td><td class="num">0.014</td></tr>
+        <tr><td>expert</td><td class="num">26.06</td><td class="num">66,052</td><td class="num">2,573</td><td class="num">856.7</td><td class="num">0.54</td><td class="num">0.909</td><td class="num">0.015</td></tr>
       </tbody>
     </table>
     <ul>
-      <li><strong>OK</strong> — 불변식이 모든 런의 모든 탭에서 유지됨</li>
-      <li><strong>OK</strong> — 모든 런이 종료됨 (유능한 플레이어가 불사신이 되지 않음)</li>
-      <li><strong>OK</strong> — θ가 세 페르소나를 마땅한 순서로 정렬 (0.702 &lt; 0.801 &lt; 0.864)</li>
+      <li><strong>OK</strong> — 완결성 불변식이 모든 런의 모든 탭에서 유지됨</li>
+      <li><strong>OK</strong> — novice와 casual은 전부 패배로 끝남 (트레이가 실제로 물어야 함)</li>
+      <li><strong>OK</strong> — 실력이 보상됨: 1.44 → 26.06 레벨 (<strong>18배</strong>)</li>
+      <li><strong>OK</strong> — θ가 페르소나를 마땅한 순서로 정렬: 0.559 &lt; 0.629 &lt; 0.909</li>
     </ul>
 
-    <div class="callout">
-      <p>
-        <strong>부수적으로 드러난 흥미로운 결과:</strong> 디렉터는 세션 길이를 <em>탭 수</em>가
-        아니라 <strong>실시간 기준으로 균등화</strong>합니다. 초보는 268탭 × 0.9초, 숙련자는
-        117탭 × 2.6초 — 둘 다 대략 <strong>3~5분</strong>입니다. 의도해서 넣은 규칙이 아니라
-        플로우 채널 추적에서 자연히 나온 성질입니다.
-      </p>
-    </div>
-
-    <h3>6.1 벤치가 화면에 닿기 전에 잡아낸 설계 결함</h3>
+    <h3>7.1 계측이 화면에 닿기 전에 잡아낸 것들</h3>
     <table>
-      <thead><tr><th style="width:32%">증상</th><th>원인과 수정</th></tr></thead>
+      <thead><tr><th style="width:34%">증상</th><th>원인과 수정</th></tr></thead>
       <tbody>
         <tr>
-          <td>유능한 봇이 <strong>4,000탭까지 죽지 않음</strong> (4천만 점)</td>
-          <td>종료 강제력 부재. 플로우 채널만으로는 런이 끝나지 않음 → <strong>강도 램프</strong> 도입.</td>
+          <td>초기 시안에서 <strong>턴당 선택지 2.5개, 58% 동점</strong></td>
+          <td>판이 차면 대부분의 말이 영구히 쐐기박히는 이동 규칙 → 규칙 전면 교체. 짐작이 아니라 의사결정 깊이 진단으로 판정.</td>
         </tr>
         <tr>
-          <td>생존 보장 <strong>15,829회 위반</strong></td>
-          <td>“탈출 4수 보장”이 애초에 구성 불가능한 약속 → 선호로 강등하고 <strong>증명 가능한 불변식</strong>만 남김.</td>
+          <td>유능한 봇이 <strong>4,000탭까지 안 죽음</strong></td>
+          <td>종료 강제력 부재 → 강도 램프 도입. 이후 밀도가 자기평형을 이루는 구조적 문제까지 드러나 규칙 자체를 재검토.</td>
         </tr>
         <tr>
-          <td>유능한 런의 하위 10%가 <strong>5탭 만에 종료</strong></td>
-          <td>빈 보드를 데드락으로 오판. 화살표를 다 치우면 이기는 게 아니라 죽었음 → 종료 판정 수정 + 콜드스타트 사전확률 도입(θ가 1탭 만에 0.78로 튀어 처음부터 최대 압박이 걸림).</td>
+          <td>지연 결정 1차 시안에서 <strong>서투른 플레이어가 100% 패배</strong></td>
+          <td>배정기가 자기 장부만 보고 실제 트레이를 안 봄 → 트레이를 직접 읽도록 수정. “플레이어 상황에 따라”가 말이 아니라 코드가 됨.</td>
         </tr>
         <tr>
-          <td>튜닝 1차 결과가 <strong>expert 239탭(약 10분)</strong></td>
-          <td>길이 페널티가 분리도 보상에 비해 너무 약함 → 페널티 강화 후 전 페르소나 3~5분에 안착.</td>
+          <td>난이도 다이얼이 <strong>절벽</strong> (0.35→100%, 0.7→0%)</td>
+          <td>구제 등급이 3단계뿐이라 목표값이 경계를 넘으면 튐 → 확률적 선택 + 위험 구간 강제 게이트로 매끄러운 기울기 확보.</td>
+        </tr>
+        <tr>
+          <td>숙련자가 <strong>레벨마다 물러진 난이도로 재시작</strong></td>
+          <td>난이도 상한이 레벨 진행에만 연동됨 → 상한 자체를 θ에 연동.</td>
         </tr>
       </tbody>
     </table>
 
-    <h3>6.2 오프라인 튜닝 결과</h3>
-    <p>
-      후보 정책 48개 × 페르소나 3종 × 시드 6개로 전체 게임을 재생해 채점했습니다.
-      목적함수는 플로우 채널 추적 오차, 채널 밖 체류 시간, 세션 길이, 그리고
-      <strong>초보와 숙련자가 실제로 겪는 난이도의 차이(분리도)</strong>입니다.
-    </p>
-    <table>
-      <thead><tr><th>정책</th><th class="num">Loss (낮을수록 좋음)</th><th class="num">분리도</th></tr></thead>
-      <tbody>
-        <tr><td>손으로 정한 초기값</td><td class="num">2.0815</td><td class="num">0.0627</td></tr>
-        <tr><td><strong>튜닝 결과 (빌드에 반영)</strong></td><td class="num"><strong>1.4564</strong></td><td class="num"><strong>0.0846</strong></td></tr>
-      </tbody>
-    </table>
-    <p>
-      목적함수 기준 <strong>30% 개선</strong>, 분리도 <strong>35% 향상</strong>. 전체 시행 기록은
-      저장소 <code>tuning/result.json</code>에 있습니다.
-    </p>
-    <p>
-      <strong>정직하게 덧붙이자면</strong>, expert 페르소나의 “지루함” 지표는 튜닝 후에도
-      0.66으로 높습니다. 다만 이 지표는 <em>후회가 낮고 탈출률이 높은 상태</em>로 정의되어
-      있어, 솔버를 그대로 따라가는 봇에게는 정의상 항상 참에 가깝습니다. 지표의 인공물로
-      보이며, 사람 플레이 데이터로 재검증이 필요한 부분입니다.
-    </p>
-
-    <h2>7. 외부 에셋 및 오픈소스 출처</h2>
+    <h2>8. 외부 에셋 및 오픈소스 출처</h2>
     <p>
       <strong>외부 에셋 없음.</strong> 이미지·사운드·폰트·아이콘 파일이 저장소에 하나도
-      없습니다. 모든 그래픽(화살표, 타일, 그래프, 파티클)은 Canvas 2D API와 CSS로 코드가
-      직접 그립니다. 서체는 사용자 기기의 시스템 폰트를 사용합니다.
+      없습니다. 타일의 여덟 가지 무늬(원·삼각형·사각형·마름모·별·육각형·십자·아치)는 전부
+      Canvas 2D 경로로 코드가 그립니다. 서체는 사용자 기기의 시스템 폰트를 사용합니다.
     </p>
     <table>
       <thead>
@@ -355,43 +304,44 @@ every stated range.</code></pre>
       <tbody>
         <tr><td><code>vite</code> ^6.0.5</td><td>MIT</td><td>devDependency</td><td>개발 서버 및 정적 빌드</td></tr>
         <tr><td><code>typescript</code> ^5.7.2</td><td>Apache-2.0</td><td>devDependency</td><td>타입 검사</td></tr>
-        <tr><td><code>tsx</code> ^4.19.2</td><td>MIT</td><td>devDependency</td><td>벤치·튜너 실행</td></tr>
+        <tr><td><code>tsx</code> ^4.19.2</td><td>MIT</td><td>devDependency</td><td>벤치·프로브 실행</td></tr>
         <tr><td><code>@types/node</code></td><td>MIT</td><td>devDependency</td><td>타입 정의</td></tr>
-        <tr><td><code>@anthropic-ai/sdk</code></td><td>MIT</td><td>devDependency</td><td>오프라인 튜너의 LLM 탐색 (5.3)</td></tr>
+        <tr><td><code>@anthropic-ai/sdk</code></td><td>MIT</td><td>devDependency</td><td>오프라인 도구용. 배포 번들에 미포함</td></tr>
       </tbody>
     </table>
     <div class="callout">
       <p>
         <strong><code>package.json</code>의 <code>dependencies</code>는 비어 있습니다.</strong>
-        위 5개는 전부 개발 전용이며 배포 번들에 포함되지 않습니다. 빌드 산출물은
-        JS 23KB · CSS 8KB(gzip 각 10KB · 2KB)이고 외부 요청이 0건입니다.
+        위 다섯은 전부 개발 전용입니다. 빌드 산출물은 JS 25KB · CSS 8KB(gzip 11KB · 2KB)이고
+        외부 요청이 0건입니다.
       </p>
     </div>
 
-    <h2>8. 한계와 다음 단계</h2>
+    <h2>9. 한계와 다음 단계</h2>
     <ul>
       <li>
-        <strong>사람 데이터가 없습니다.</strong> 정책은 봇 페르소나에 적합되어 있습니다.
-        봇은 사람의 대용이지 사람이 아닙니다 — 6.2의 “지루함” 지표 문제가 그 한계를 보여줍니다.
-        다음 단계는 실제 플레이 로그로 페르소나를 재적합하는 것입니다.
+        <strong>사람 데이터가 없습니다.</strong> 정책은 봇 페르소나에 맞춰져 있습니다. 봇은
+        사람의 대용이지 사람이 아닙니다. 다음 단계는 실제 플레이 로그로 페르소나를 재적합하는
+        것입니다.
       </li>
       <li>
-        <strong>추정이 세션 내로 한정됩니다.</strong> 계정·서버가 없으므로 θ는 매 런 사전확률에서
-        다시 시작합니다. 세션 간 프로필을 유지하면 첫 30초의 추정 정확도가 크게 올라갑니다.
-        해커톤 스코프에서 의도적으로 제외했습니다.
+        <strong>추정이 세션 내로 한정됩니다.</strong> 계정·서버가 없으므로 θ는 매 런
+        사전확률에서 다시 시작합니다. 세션 간 프로필을 유지하면 첫 30초의 정확도가 크게
+        올라갑니다. 해커톤 스코프에서 의도적으로 제외했습니다.
       </li>
       <li>
-        <strong>후보 탐색이 샘플링입니다.</strong> 매 탭 40개 후보는 지연 예산(0.18ms/탭) 안에서
-        정한 값입니다. 품질을 희생하지만 정확성은 희생하지 않습니다(3.3).
+        <strong>더미 기하는 아직 절차적이지 않습니다.</strong> 층별 계단형 배치를 쓰고
+        있습니다. 기하까지 생성 대상으로 넣으면 “레벨 디자인 자동화”의 남은 절반이 채워집니다.
       </li>
       <li>
-        <strong>LLM 유도 탐색의 효용이 아직 미측정입니다.</strong> 구현은 되어 있으나 5.3에 적은
-        이유로 비교 수치를 얻지 못했습니다.
+        <strong>정책 상수는 손으로 정했습니다.</strong> 봇 페르소나를 목적함수에 걸어 탐색하는
+        오프라인 튜너를 이전 규칙에서 구현해 30% 개선을 얻은 적이 있고, 이 규칙으로 이식하는
+        것이 가장 가까운 다음 작업입니다.
       </li>
     </ul>
 
     <footer>
-      CADENCE · NHN GAME × AI 해커톤 (NAN 2026) 사전과제 · 제출물 ④ AI 활용 기술 문서
+      LATENT · NHN GAME × AI 해커톤 (NAN 2026) 사전과제 · 제출물 ④ AI 활용 기술 문서
     </footer>
   </body>
 </html>

@@ -2,16 +2,16 @@
 <html lang="ko">
   <head>
     <meta charset="utf-8" />
-    <title>CADENCE — 게임 소개 및 설명</title>
+    <title>LATENT — 게임 소개 및 설명</title>
     <link rel="stylesheet" href="doc-style.css" />
   </head>
   <body>
     <div class="cover">
       <p class="eyebrow">NHN GAME × AI 해커톤 · NAN 2026 · 사전과제 제출물 ③</p>
-      <h1>CADENCE</h1>
-      <p class="tagline">레벨을 만들지 않습니다. 매 순간을 설계합니다.</p>
+      <h1>LATENT</h1>
+      <p class="tagline">덮인 타일은 아직 정해져 있지 않습니다.</p>
       <div class="meta">
-        <span><b>장르</b> 화살표 퍼즐 · 무한 모드</span>
+        <span><b>장르</b> 타일 매치 퍼즐</span>
         <span><b>플랫폼</b> 웹 (모바일·데스크톱)</span>
         <span><b>참가</b> 개인</span>
         <span><b>문서</b> 게임 소개 및 설명</span>
@@ -19,26 +19,26 @@
     </div>
 
     <p class="lead">
-      7×7 격자 위의 화살표를 눌러 판 밖으로 내보내는 퍼즐입니다. 규칙은 5초면 익힐 수
-      있지만, 화살표가 도중에 막히면 <strong>그 자리에 멈춰</strong> 다른 화살표들의 길을
-      바꿉니다. 그래서 무엇을 누르느냐가 아니라 <strong>어떤 순서로 누르느냐</strong>가
-      게임의 전부입니다.
+      층층이 쌓인 타일을 위에서부터 걷어내 <strong>같은 무늬 3개</strong>를 모으는 퍼즐입니다.
+      아래 트레이는 <strong>7칸</strong>이고, 3개가 모이면 사라집니다. 짝을 못 맞춘 채
+      7칸이 다 차면 그 판은 끝입니다. 여기까지는 익숙한 형태입니다.
     </p>
     <p>
-      그리고 플레이어가 화면을 누를 때마다, AI 디렉터가 그 한 번의 탭으로 플레이어의
-      실력을 다시 추정하고 다음 순간에 놓일 화살표를 설계합니다. 게임 안의
-      <strong>AI 패널</strong>에서 그 판단 과정을 그대로 볼 수 있습니다.
+      다른 점은 하나뿐입니다. <strong>레벨이 미리 존재하지 않습니다.</strong> 덮여 있는
+      타일에는 무늬가 그려져 있지 않습니다 — 숨겨 둔 것이 아니라 <em>아직 결정되지 않은</em>
+      것이고, 위가 걷혀 드러나는 순간 AI가 <strong>당신의 그 시점 상황을 보고</strong>
+      무늬를 정합니다.
     </p>
 
     <h2>플레이 링크</h2>
     <div class="linkbox">
-      <div><span class="k">플레이</span><a href="https://taragamesdev.github.io/cadence-nan2026/">https://taragamesdev.github.io/cadence-nan2026/</a></div>
-      <div><span class="k">소스 코드</span><a href="https://github.com/TaraGamesDev/cadence-nan2026">https://github.com/TaraGamesDev/cadence-nan2026</a></div>
+      <div><span class="k">플레이</span><a href="https://taragamesdev.github.io/latent-nan2026/">https://taragamesdev.github.io/latent-nan2026/</a></div>
+      <div><span class="k">소스 코드</span><a href="https://github.com/TaraGamesDev/latent-nan2026">https://github.com/TaraGamesDev/latent-nan2026</a></div>
       <div><span class="k">플레이 영상</span><span class="pending">제출 시 기입</span></div>
     </div>
     <p>
       링크를 클릭하면 브라우저에서 바로 실행됩니다. 설치·로그인·계정·결제가 필요 없고,
-      유료 API나 별도 라이선스도 사용하지 않습니다. 네트워크가 끊겨도 최초 로드 이후에는
+      유료 API나 별도 라이선스도 사용하지 않습니다. 최초 로드 이후에는 네트워크가 끊겨도
       정상 동작합니다.
     </p>
 
@@ -46,98 +46,88 @@
 
     <h3>목표</h3>
     <p>
-      화살표를 판 밖으로 내보내 점수를 얻습니다. 보드가 더 이상 움직일 수 없게 되기 전까지
-      최대한 오래, 최대한 많이 내보내는 것이 목표입니다. 클리어 조건이 있는 스테이지가
-      아니라, 압력이 계속 오르는 무한 모드입니다.
+      더미의 타일을 전부 걷어내면 그 레벨을 클리어하고 다음 판으로 넘어갑니다. 레벨은
+      조금씩 커지고, 트레이가 가득 차면 런이 끝납니다. 얼마나 멀리 가느냐가 기록입니다.
     </p>
 
     <h3>조작</h3>
     <p>
-      <strong>화살표를 한 번 누르는 것이 전부입니다.</strong> 모바일에서는 탭, 데스크톱에서는
-      클릭. 드래그·길게 누르기·제스처는 없습니다.
+      <strong>타일을 한 번 누르는 것이 전부입니다.</strong> 모바일에서는 탭, 데스크톱에서는
+      클릭. 드래그도, 길게 누르기도, 제스처도 없습니다.
     </p>
 
     <h3>규칙</h3>
     <table>
       <thead>
-        <tr><th style="width:22%">상황</th><th>결과</th></tr>
+        <tr><th style="width:24%">상황</th><th>결과</th></tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>탈출</strong></td>
-          <td>누른 화살표가 가리키는 방향으로 미끄러져 <strong>판 가장자리까지 도달하면 판 밖으로 나가고 득점</strong>합니다.</td>
+          <td><strong>가져오기</strong></td>
+          <td>위에 아무것도 덮이지 않은 타일만 누를 수 있습니다. 누르면 아래 트레이로 들어갑니다.</td>
         </tr>
         <tr>
-          <td><strong>정지</strong></td>
-          <td>가는 길에 다른 화살표가 있으면 <strong>그 앞 칸에 멈춰 섭니다.</strong> 득점은 없지만 보드가 재배치되어 다른 화살표들의 길이 열리거나 막힙니다.</td>
+          <td><strong>완성</strong></td>
+          <td>트레이에 <strong>같은 무늬 3개</strong>가 모이면 즉시 사라지고 슬롯 3칸이 돌아옵니다.</td>
         </tr>
         <tr>
-          <td><strong>잼</strong></td>
-          <td>바로 앞 칸이 이미 막혀 있어 한 칸도 움직일 수 없으면 아무 일도 일어나지 않고 흔들립니다. 콤보가 끊기고 <strong>그 탭은 낭비됩니다.</strong></td>
+          <td><strong>결정</strong></td>
+          <td>타일을 가져오면 그 아래가 드러납니다. <strong>드러나는 바로 그 순간 무늬가 정해집니다.</strong></td>
+        </tr>
+        <tr>
+          <td><strong>종료</strong></td>
+          <td>트레이 <strong>7칸이 모두 차고</strong> 완성이 없으면 런이 끝납니다.</td>
         </tr>
       </tbody>
     </table>
 
     <div class="callout">
       <p>
-        <strong>“정지”가 이 게임의 핵심입니다.</strong> 만약 화살표가 길이 뚫려 있을 때 그냥
-        사라지기만 한다면, 타일 제거는 길을 열기만 하므로 어떤 순서로 눌러도 결과가 같아집니다.
-        막힌 화살표가 <em>새로운 자리에 남기 때문에</em> A를 움직이면 B의 길이 막히거나 열리고,
-        비로소 순서가 의미를 갖습니다.
+        <strong>회색으로 일렁이는 타일은 뒷면이 아닙니다.</strong> 무늬가 아직 없는 타일입니다.
+        그래서 뒤집어 놓은 카드처럼 그리지 않고, 아직 쓰이지 않은 빈칸으로 그립니다.
+        이 게임에서 가장 중요한 것이 화면에 그대로 드러나 있습니다 — 패널을 열지 않아도.
       </p>
     </div>
 
-    <h3>점수</h3>
-    <ul>
-      <li>탈출 1회 = <code>10 + 2 × 이동거리 + 5 × 현재 콤보</code></li>
-      <li>탈출할 때마다 <strong>콤보 +1</strong>. 멀리서 날아온 화살표일수록 점수가 높습니다.</li>
-      <li>득점 없이 위치만 바꾼 경우 콤보 −1 (0 미만으로는 내려가지 않음)</li>
-      <li>잼이 나면 콤보 <strong>0으로 초기화</strong></li>
-    </ul>
+    <h3>무엇이 실력인가</h3>
     <p>
-      위치를 바꾸는 수는 필요악이라 콤보를 완전히 없애지는 않고 깎기만 합니다. 콤보를 끊는
-      것은 오직 잼입니다. 여기서 실제 긴장이 생깁니다 — <em>지금 무리해서 탈출을 만들 것인가,
-      콤보를 조금 잃고 판을 정리할 것인가.</em>
+      무늬가 즉석에서 정해진다면 플레이어가 할 일이 없어 보일 수 있지만, 반대입니다.
+      선택은 <strong>어떤 타일을 어떤 순서로 가져올 것인가</strong>입니다.
     </p>
-
-    <h3>종료 조건</h3>
-    <p>게임이 끝나는 방식은 두 가지이며, 둘 다 플레이어 자신의 선택이 만든 결과입니다.</p>
     <ul>
-      <li><strong>데드락</strong> — 보드에 남은 모든 화살표가 한 칸도 움직일 수 없는 상태</li>
-      <li><strong>보드 초과</strong> — 새 화살표가 나와야 하는데 빈 칸이 하나도 없는 상태</li>
+      <li>지금 트레이에 있는 무늬와 짝이 맞는 타일을 먼저 가져오면 슬롯이 돌아옵니다</li>
+      <li>새 무늬를 덜컥 집으면 슬롯 하나가 <strong>세 장이 모일 때까지 묶입니다</strong></li>
+      <li>어떤 타일을 치우면 그 아래가 여러 장 열립니다 — 선택지를 늘리는 수입니다</li>
     </ul>
     <p>
-      목숨이나 하트는 없습니다. 잼은 목숨을 깎는 대신 <strong>턴을 낭비하게 만듭니다</strong> —
-      그리고 잼이 난 탭에도 디렉터는 화살표를 스폰합니다. 그래서 잼은 보드가 여유로울 때는
-      거의 공짜지만 후반에는 치명적입니다. 실제 무게와 정확히 일치합니다.
+      외톨이 무늬를 몇 개까지 들고 갈 것인가, 지금 당장 사라지는 쪽을 택할 것인가 판을
+      먼저 열어 둘 것인가. 매 탭이 그 판단입니다. 그리고 시스템은 <strong>매 탭마다</strong>
+      그 판단을 솔버의 최선수와 비교해 채점하고 있습니다.
     </p>
 
     <h2>화면 구성</h2>
     <figure>
-      <img src="img/board.png" alt="CADENCE 플레이 화면" />
+      <img src="img/board.png" alt="LATENT 플레이 화면" />
       <figcaption>
-        실제 플레이 화면. 상단에 점수·콤보·<strong>압력</strong> 게이지가 있습니다. 압력은 런이
-        진행될수록 오르는 전역 강도이며, 이것이 있기 때문에 아무리 잘하는 플레이어라도 런이
-        반드시 끝납니다. 화살표 색은 방향과 1:1로 대응합니다 —
-        <span style="color:#0f8fa8">↑ 청록</span>,
-        <span style="color:#b57a00">→ 황색</span>,
-        <span style="color:#7b4fd8">↓ 보라</span>,
-        <span style="color:#d1385a">← 적색</span>.
+        실제 플레이 화면. 색이 있는 타일은 무늬가 결정된 것, <strong>점선으로 흐릿하게
+        일렁이는 타일은 아직 결정되지 않은 것</strong>입니다. 아래 7칸이 트레이이고,
+        마지막 두 칸은 붉게 표시되어 남은 여유를 알려줍니다. 무늬는 색과 모양이 함께
+        다릅니다 — 색만으로 구분하지 않아도 되도록 한 선택입니다.
       </figcaption>
     </figure>
 
-    <h2>AI 디렉터 패널</h2>
+    <h2>AI 패널</h2>
     <p>
-      우상단 <strong>“AI 패널”</strong> 버튼 또는 <code>D</code> 키로 열립니다. 이 게임의 AI가
-      무엇을 하고 있는지 숨기지 않고 전부 보여주는 화면입니다.
+      우상단 <strong>“AI 패널”</strong> 버튼 또는 <code>D</code> 키로 열립니다. 이 게임의
+      AI가 무엇을 근거로 방금 그 무늬를 썼는지 숨기지 않고 전부 보여줍니다.
     </p>
     <ul>
-      <li>시스템이 지금 당신을 어떻게 추정하고 있는가 — 숙련도 θ와 계획성·효율·템포</li>
+      <li>지금 시스템이 당신을 어떻게 추정하는지 — 숙련도 θ와 계획성·정돈·템포, 좌절도·지루함</li>
       <li>숙련도 · 목표 난이도 · 실제 난이도가 겹쳐 그려지는 <strong>플로우 채널 그래프</strong></li>
-      <li>이번 스폰을 그렇게 결정한 이유 (한국어 문장)</li>
-      <li>검토된 후보 배치들과 <strong>채택되지 않은 대안들</strong>, 각각의 점수</li>
-      <li>불변식 검증 결과 — “스폰 직후 최소 1수 이동 가능”이 실제로 충족되었는지</li>
-      <li>솔버가 증명한 탈출 체인이 보드 위에 <strong>번호로 직접 표시</strong>됩니다</li>
+      <li>방금 쓴 타일의 근거 (한국어 문장)</li>
+      <li><strong>검토된 후보 무늬들과 채택되지 않은 것들</strong> — 완결성 판정 포함</li>
+      <li>불변식 검증: 미결정 타일 수 ≥ 완성에 필요한 타일 수</li>
+      <li>패널이 열려 있는 동안 <strong>AI가 방금 결정한 타일이 보드 위에 표시</strong>됩니다</li>
     </ul>
     <p>
       기술적 세부 사항은 별도 제출물 <strong>④ AI 활용 기술 문서</strong>에 정리했습니다.
@@ -152,18 +142,19 @@
     </p>
 
     <h3>소스에서 직접 빌드</h3>
-    <pre><code>git clone https://github.com/TaraGamesDev/cadence-nan2026.git
-cd cadence-nan2026
+    <pre><code>git clone https://github.com/TaraGamesDev/latent-nan2026.git
+cd latent-nan2026
 npm install
 
 npm run dev     # 개발 서버 — http://localhost:5173
 npm run build   # docs/ 로 정적 빌드 (GitHub Pages가 서빙하는 산출물)
-npm run bench   # 헤드리스 엔진 검증 (규칙·솔버·디렉터)
-npm run tune    # 오프라인 디렉터 정책 튜닝</code></pre>
+npm run bench   # 헤드리스 엔진 검증</code></pre>
     <p>
       Node.js 20 이상이면 동작합니다 (개발 환경은 Node 22.14). <code>npm run bench</code>는
-      심사자가 게임을 검증하는 데도 쓸 수 있습니다 — 봇 페르소나로 전체 게임을 돌려
-      불변식 유지·런 종료·숙련도 추정의 정렬을 <strong>단언</strong>합니다.
+      심사자가 직접 검증하는 데도 쓸 수 있습니다 — 봇 페르소나로 전체 게임을 실제
+      <code>tap()</code> 경로로 돌려 세 가지를 <strong>단언</strong>합니다: 완결성 불변식이
+      유지되는가, 약한 플레이어는 반드시 지는가, 숙련도 추정이 페르소나를 마땅한 순서로
+      정렬하는가.
     </p>
 
     <h2>제작 범위</h2>
@@ -174,11 +165,12 @@ npm run tune    # 오프라인 디렉터 정책 튜닝</code></pre>
     </p>
     <p>
       <strong>외부 에셋은 사용하지 않았습니다.</strong> 이미지·사운드·폰트 파일이 저장소에
-      하나도 없으며, 화면의 모든 그래픽은 코드로 그려집니다. 런타임 의존성도 0개입니다.
+      하나도 없으며, 화면의 모든 그래픽은 코드로 그려집니다. 런타임 의존성도 0개이고,
+      빌드 산출물은 JS 25KB · CSS 8KB입니다.
     </p>
 
     <footer>
-      CADENCE · NHN GAME × AI 해커톤 (NAN 2026) 사전과제 · 제출물 ③ 게임 소개 및 설명 문서
+      LATENT · NHN GAME × AI 해커톤 (NAN 2026) 사전과제 · 제출물 ③ 게임 소개 및 설명 문서
     </footer>
   </body>
 </html>
