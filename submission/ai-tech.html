@@ -108,7 +108,9 @@
         <tr><td><code>ai/assigner.ts</code></td><td>색 결정 + 완결성 검사 + 생존 바닥선</td></tr>
         <tr><td><code>ai/policy.ts</code></td><td>정책 상수. 빌드에 구워짐</td></tr>
         <tr><td><code>ai/bots.ts</code></td><td>봇 페르소나 — 콜드스타트 문제의 해법</td></tr>
-        <tr><td><code>ui/scene.ts</code></td><td>Three.js 씬. 전부 절차적 — 에셋 파일 없음</td></tr>
+        <tr><td><code>ui/scene.ts</code></td><td>Three.js 씬. 규칙과 시야를 일치시키는 책임</td></tr>
+        <tr><td><code>ui/assets.ts</code></td><td>glTF 로드, 방향 정규화, 판 나인슬라이스</td></tr>
+        <tr><td><code>assets/blender/*.py</code></td><td>철판·나사·볼트구멍·홀더를 만드는 Blender 스크립트</td></tr>
         <tr><td><code>tools/bench.ts</code></td><td>단언하는 벤치. 보고하지 않고 실패시킵니다</td></tr>
         <tr><td><code>tools/margin.ts</code></td><td>이 규칙에서 실력이 얼마나 값어치가 있는지 측정</td></tr>
         <tr><td><code>probe/</code></td><td>2.1의 후보 비교를 재현하는 실측 코드</td></tr>
@@ -193,7 +195,8 @@
         계획성·정돈·템포), 플로우 채널, 방금 정한 색의 근거, 그리고
         <strong>후보 색 비교표</strong> — 여기서 여러 후보가 <strong>완결성 ‘불가’로
         기각</strong>된 것이 보입니다. 불변식이 실제로 후보를 자르고 있다는 증거입니다.
-        맨 아래에 불변식 검증 결과가 그대로 출력됩니다.
+        맨 아래에 불변식 검증 결과가 그대로 출력됩니다. 화면의 부품은 전부
+        <code>assets/blender/</code>의 스크립트가 만든 3D 모델입니다.
       </figcaption>
     </figure>
 
@@ -214,9 +217,19 @@
           <td>코딩 협업 도구. 규칙 설계 토론, 엔진·AI·UI 구현, 헤드리스 계측 도구 작성, 설계 결함 진단. 6.2 참조.</td>
         </tr>
         <tr>
-          <td><strong>에셋 생성</strong></td>
+          <td><strong>3D 모델 제작</strong></td>
+          <td>Blender 5.2 LTS<br />(헤드리스 스크립트)</td>
+          <td>나사·철판·볼트구멍·홀더 4종을 <strong>파이썬 스크립트가 생성</strong>합니다. 손으로 만든 바이너리가 아니라 <code>assets/blender/*.py</code>가 결정론적으로 뽑아내는 산출물이고, 같은 스크립트는 같은 바이트를 냅니다.</td>
+        </tr>
+        <tr>
+          <td><strong>텍스처 생성</strong></td>
+          <td>Comfy Cloud<br />(Z-Image-Turbo int8<br />+ Qwen3-4B)</td>
+          <td>브러시드 스틸 러프니스 맵 1장. 프롬프트 전문·시드·후처리 전 과정은 6.3과 <code>assets/textures/PROVENANCE.md</code>에 기록했습니다.</td>
+        </tr>
+        <tr>
+          <td><strong>사운드·폰트</strong></td>
           <td>없음</td>
-          <td>이미지·사운드·모델·폰트를 <strong>생성하지도, 사용하지도 않았습니다.</strong> 철판·나사·홀더는 코드가 만든 기하이고, 금속 질감의 브러시드 러프니스 맵과 환경광은 실행 시점에 생성합니다.</td>
+          <td>사용하지 않았습니다. 서체는 사용자 기기의 시스템 폰트입니다.</td>
         </tr>
       </tbody>
     </table>
@@ -263,6 +276,46 @@
       전체 진행은 저장소 커밋 기록에 남아 있습니다. 규칙을 여러 차례 갈아엎는 동안
       <strong>AI 층(추정기·글래스박스·벤치·페르소나)은 한 번도 재작성되지 않았습니다</strong> —
       이 프로젝트의 자산이 어디에 있는지 보여주는 사실이라고 생각합니다.
+    </p>
+
+    <h3>6.3 에셋 파이프라인에 실제로 준 지시</h3>
+    <p>
+      규정이 요구하는 <em>“AI 대상 주요 프롬프트 및 지시 사항”</em>에 해당하는 부분이라 그대로
+      적습니다. 이 단계에서 사람이 내린 판단이 하나 있고, 그것이 결과의 대부분을 갈랐습니다.
+    </p>
+    <div class="callout">
+      <p><strong>“하드서피스 부품에 text-to-3D를 쓰지 않는다.”</strong></p>
+      <p>
+        육각 소켓·챔퍼·나사산은 <em>정확히 규정된 형상</em>입니다. Hunyuan3D나 Rodin 같은 생성
+        모델은 이것을 뭉툭한 덩어리로 근사합니다. 그래서 <strong>형상은 Blender 파라메트릭
+        스크립트, 표면은 생성 모델</strong>로 나눴습니다 — 각자 강한 자리에.
+      </p>
+    </div>
+    <p>
+      Blender 쪽 에이전트에 준 지시는 프롬프트라기보다 <strong>사양</strong>에 가깝습니다. 예를
+      들어 나사에는 “머리 대변 거리 0.40, 원점은 안착면, 나사산이 <em>보여야</em> 한다 — 탭하면
+      돌아 나오는데 매끈한 원기둥은 못처럼 보인다, 삼각형 4,000개 이하”처럼 숫자와 이유를 함께
+      줬고, 산출물을 직접 렌더해서 보고 판정하게 했습니다. 실제로 그 검증 단계가 나사산의
+      12각형 패싯과 <code>doubleSided</code> 플래그를 잡아냈습니다.
+    </p>
+    <p>텍스처 생성 프롬프트는 전문이 다음과 같습니다 (Z-Image-Turbo, 1024×1024, 8스텝, cfg 1.0, 시드 771144, 네거티브 없음):</p>
+    <pre><code>Extreme top-down flat macro photograph of a brushed stainless steel sheet, the metal
+surface completely fills the frame edge to edge. Fine dense horizontal brushed grain
+running perfectly straight from left to right, thousands of fine parallel satin brush
+lines, scattered faint micro-scratches, neutral mid-grey metal, uniform matte satin
+finish. Perfectly flat even diffuse studio lighting, uniform brightness across the
+entire image, no bright highlights, no dark corners, no vignetting, no glare, no
+reflections, no cast shadows. Perfectly perpendicular flat-on view with zero
+perspective and zero depth. A featureless continuous uniform material field with no
+panel edges, no bevels, no rivets, no bolts, no holes, no logos, no text, no
+watermark, no border. Repeating seamless tileable material swatch, PBR albedo base
+colour map, flat lit texture scan.</code></pre>
+    <p>
+      프롬프트에 “평평하게 조명하라”를 저렇게 여러 번 쓴 이유는 하나입니다. 생성 이미지에 조명이
+      구워져 들어가면 게임의 실시간 조명과 싸우기 때문입니다. 그리고 실제로 <strong>말을 듣지
+      않았습니다</strong> — 생성물에는 54.9 그레이 레벨의 저주파 기울기가 남아 있었고, 그걸 재서
+      하이패스로 제거하는 것이 후처리 1단계입니다. 프롬프트로 해결되지 않는 것은 코드로
+      해결한다는 것이, 이 단계에서 배운 것입니다.
     </p>
 
     <h2>7. 검증</h2>
@@ -375,18 +428,78 @@
 
     <h2>8. 외부 에셋 및 오픈소스 출처</h2>
     <p>
-      <strong>외부 에셋 없음.</strong> 이미지·사운드·모델·폰트·아이콘 파일이 저장소에 하나도
-      없습니다. 철판은 모서리를 둥글린 박스에 볼트 구멍을 파낸 기하이고, 나사는 육각 머리와
-      드라이버 소켓·와셔·샤프트를 조합한 기하입니다. 금속의 질감을 만드는 브러시드 러프니스
-      맵은 실행 시점에 캔버스에 5,000개의 가로선을 그려 만들고, 반사에 쓰는 환경광은 씬으로
-      생성합니다(HDRI 파일을 받지 않습니다). 서체는 사용자 기기의 시스템 폰트입니다.
+      <strong>구매·스톡·스크랩한 외부 에셋은 하나도 없습니다.</strong> 배포 빌드에 들어가는 에셋은
+      아래 다섯 개가 전부이고, 모두 이 저장소의 코드가 만들어낸 것입니다.
     </p>
+
+    <h3>8.1 3D 모델 4종 — Blender 스크립트 산출물</h3>
+    <p>
+      <code>public/models/</code>의 <code>screw · plate · hole · holder</code> GLB는
+      <code>assets/blender/</code>의 파이썬 스크립트가 헤드리스 Blender 5.2 LTS에서 생성합니다.
+      <code>npm run models</code>로 재생성되며 <strong>같은 스크립트는 같은 바이트</strong>를
+      냅니다(나사 GLB는 두 번 실행해 md5 일치를 확인했습니다). 즉 저장소에
+      <em>손으로 만들어 재현 불가능한 바이너리</em>는 없습니다.
+    </p>
+    <table>
+      <thead>
+        <tr><th style="width:18%">모델</th><th class="num">삼각형</th><th class="num">크기</th><th>비고</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>screw</code></td><td class="num">2,908</td><td class="num">82KB</td><td>십자 리세스, 플랜지, <strong>실제 나선 나사산</strong>. 탭하면 돌아 나오므로 나사산이 보여야 합니다</td></tr>
+        <tr><td><code>plate</code></td><td class="num">1,788</td><td class="num">55KB</td><td>프레스 강판. 런타임에 <strong>3D 나인슬라이스</strong>로 늘어나도록 테두리 안쪽이 비어 있습니다</td></tr>
+        <tr><td><code>hole</code></td><td class="num">1,344</td><td class="num">35KB</td><td>나사가 빠진 자리에 남는 리세스. 화면에서 가장 많이 복제됩니다</td></tr>
+        <tr><td><code>holder</code></td><td class="num">1,898</td><td class="num">53KB</td><td>웰 3칸 트레이</td></tr>
+      </tbody>
+    </table>
+
+    <h3>8.2 텍스처 1장 — Comfy Cloud 생성 + 자체 후처리</h3>
+    <ul>
+      <li>
+        <strong>배포에 포함된 이미지: 1개.</strong> <code>public/textures/steel-roughness.png</code>
+        (512×512, 8비트 그레이스케일 단일 채널, 55,185바이트).
+      </li>
+      <li>
+        <strong>생성:</strong> Comfy Cloud에서 오픈 웨이트 모델 <strong>Z-Image-Turbo (int8)</strong> +
+        <strong>Qwen3-4B</strong> 텍스트 인코더 (템플릿 <code>image_z_image_turbo_int8</code>,
+        1024×1024, 8스텝, cfg 1.0, 시드 771144, 네거티브 프롬프트 없음). 프롬프트 전문은 6.3에
+        있습니다. <strong>유료 상용 이미지 API는 사용하지 않았습니다.</strong>
+      </li>
+      <li>
+        <strong>후처리:</strong> 조명 기울기 제거 → 512 중앙 크롭 → offset-and-heal 심리스 처리 →
+        브러시 방향 저역 통과 → 13단계 양자화. 전부 이 저장소의 numpy/Pillow 코드이고
+        <code>assets/textures/steel-roughness.build.py</code>로 <strong>동일 바이트 재생성</strong>이
+        가능합니다.
+      </li>
+      <li>
+        <strong>검증:</strong> 타일 이음매가 내부 픽셀 변화량 대비 x 0.92배 / y 0.72배(1.00배 미만이면
+        이음매가 일반 디테일보다 눈에 덜 띈다는 뜻), 거칠기 대역 112–160(평균 138.0).
+      </li>
+      <li>
+        전체 계보 — 채택하지 않은 Flux.2 Dev 세트와 기각한 시드까지 — 는
+        <code>assets/textures/PROVENANCE.md</code>에 기록했습니다.
+      </li>
+    </ul>
+
+    <div class="callout">
+      <p><strong>생성한 것의 93%를 버렸습니다.</strong></p>
+      <p>
+        1차로 노멀맵·베이스컬러·나사머리 디테일맵까지 4장 839,675바이트를 만들었지만, 재보니
+        <strong>모델에 UV가 없어 어느 것도 붙지 않았고</strong>, 실제 폰 크기(390×780 @DPR2)에서
+        전체 세트와 런타임 캔버스 맵의 차이는 <strong>RMSE 6.44/255 — 전체 범위의 2.5%</strong>였습니다.
+        142KB 번들에 840KB를 얹을 근거가 되지 못합니다. 그래서 러프니스 한 장만 남기고
+        <strong>93.4% 감축</strong>했습니다. 러프니스만 남긴 이유도 측정에 있습니다 — metalness
+        0.86에 환경광이 0.34로 낮춰져 있어 확산광이 거의 없고, 눈에 보이는 음영이 사실상 전부
+        환경 반사이므로 <em>그것을 깨뜨리는</em> 맵이 러프니스이기 때문입니다.
+      </p>
+    </div>
+
+    <h3>8.3 오픈소스</h3>
     <table>
       <thead>
         <tr><th style="width:30%">패키지</th><th style="width:14%">라이선스</th><th style="width:16%">범위</th><th>용도</th></tr>
       </thead>
       <tbody>
-        <tr><td><code>three</code> ^0.185.1</td><td>MIT</td><td><strong>dependency</strong></td><td>3D 렌더링. 번들에 포함되는 유일한 런타임 의존성</td></tr>
+        <tr><td><code>three</code> ^0.185.1</td><td>MIT</td><td><strong>dependency</strong></td><td>3D 렌더링 및 glTF 로딩. 번들에 포함되는 유일한 런타임 의존성</td></tr>
         <tr><td><code>vite</code> ^6.0.5</td><td>MIT</td><td>devDependency</td><td>개발 서버 및 정적 빌드</td></tr>
         <tr><td><code>typescript</code> ^5.7.2</td><td>Apache-2.0</td><td>devDependency</td><td>타입 검사</td></tr>
         <tr><td><code>tsx</code> ^4.19.2</td><td>MIT</td><td>devDependency</td><td>벤치·프로브 실행</td></tr>
@@ -394,11 +507,15 @@
         <tr><td><code>@anthropic-ai/sdk</code></td><td>MIT</td><td>devDependency</td><td>오프라인 도구용. 배포 번들에 미포함</td></tr>
       </tbody>
     </table>
+    <p>
+      모델 제작에 쓴 <strong>Blender</strong>(GPL)는 빌드 도구이며 저장소나 배포물에 포함되지
+      않습니다. 생성 모델의 가중치도 재배포하지 않고, 그것으로 만든 이미지만 포함됩니다.
+    </p>
     <div class="callout">
       <p>
-        빌드 산출물은 JS 553KB · CSS 8KB (gzip 144KB · 2.5KB)이고 <strong>외부 요청이
-        0건</strong>입니다. 대부분이 Three.js이며, 2D 캔버스 버전은 25KB였습니다 —
-        비주얼 품질을 위해 지불한 비용을 숨기지 않고 적어 둡니다.
+        배포 전송량은 <strong>JS 169KB + CSS 3KB + 모델 83KB + 텍스처 55KB = 약 310KB</strong>
+        (gzip 기준, PNG는 추가 압축되지 않음)이고 <strong>외부 요청이 0건</strong>입니다.
+        2D 캔버스만 쓰던 버전은 11KB였습니다 — 비주얼 품질에 지불한 비용을 숨기지 않고 적어 둡니다.
       </p>
     </div>
 
@@ -415,9 +532,14 @@
         올라갑니다. 해커톤 스코프에서 의도적으로 제외했습니다.
       </li>
       <li>
-        <strong>벽 기하는 아직 절차적이지 않습니다.</strong> 층마다 분할 방향을 번갈아 두는
-        계단형 배치를 쓰고 있습니다. 기하까지 생성 대상으로 넣으면 “레벨 디자인 자동화”의
-        남은 절반이 채워집니다.
+        <strong>벽 배치는 아직 생성 대상이 아닙니다.</strong> 부품은 스크립트가 만들지만, 그
+        부품을 어떻게 쌓을지는 층마다 분할 방향을 번갈아 두는 고정 규칙입니다. 배치까지
+        생성 대상으로 넣으면 “레벨 디자인 자동화”의 남은 절반이 채워집니다.
+      </li>
+      <li>
+        <strong>모델에 UV가 거의 없습니다.</strong> 판에만 넣었습니다. 나사·홀더에도 넣으면
+        아노다이즈 도장 디테일맵처럼 이미 만들어 둔(그리고 잘라낸) 텍스처를 되살릴 수 있습니다.
+        지금은 그 비용을 지불할 근거가 측정되지 않았습니다.
       </li>
       <li>
         <strong>실력 마진이 6%로 좁습니다.</strong> 7.2에서 잰 값이고, 이 프로젝트에서 가장

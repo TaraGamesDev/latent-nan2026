@@ -9,7 +9,8 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "bench": "tsx src/tools/bench.ts",
-    "margin": "tsx src/tools/margin.ts"
+    "margin": "tsx src/tools/margin.ts",
+    "models": "bash assets/blender/build.sh"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

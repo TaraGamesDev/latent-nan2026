@@ -73,14 +73,23 @@ largest thing on screen and carries a tiling brushed-steel roughness map.
   (Blender's exporter flips V — it writes v_gltf = 1 - v_blender — so V is
   pre-flipped below and the GLB really does contain uv = pos * K.)
 
+  The UV layer is authored before the bevel so the modifier carries it onto the
+  chamfer strips, and then RE-STAMPED after export directly from the exported
+  POSITION bytes — see "canonicalise the UVs" near the bottom.  Two reasons: the
+  modifier's interpolation is not bit-stable (it moved 7 UV floats by one ULP
+  between two identical runs, which breaks the repository's reproducibility
+  claim), and the interpolated strips were only approximately uv = pos * K.
+  After the re-stamp the identity is exact everywhere to float32.
+
   One honest limitation: a single planar projection sees the vertical rim band
-  at r = 1.000 exactly edge-on, so those faces (~8.7% of the surface) get
-  zero-area UVs.  The front face, the border land, the groove floor and the back
-  — everything actually in the plate's plane, ~67% of the surface — come out at
-  exactly K, and the chamfers foreshorten by cos(tilt) as any planar projection
-  must.  Unrolling the rim would need a separate developed unwrap and would break
-  the uv = pos * K identity the nine-slice depends on; the rim is the dark side
-  wall of a plate that is 15x wider than it is thick, so it is not worth that.
+  at r = 1.000 exactly edge-on, so those faces (~8.8% of the surface, 56 tris)
+  get zero-area UVs.  The front face, the border land, the groove floor and the
+  back — everything actually in the plate's plane, ~67% of the surface — come out
+  at exactly K, and the chamfers foreshorten by cos(tilt) as any planar
+  projection must.  Unrolling the rim would need a separate developed unwrap and
+  would break the uv = pos * K identity the nine-slice depends on; the rim is the
+  dark side wall of a plate that is 15x wider than it is thick, so it is not
+  worth that.
 """
 import bpy, bmesh, math, os, struct, json
 from mathutils import Vector
@@ -390,6 +399,19 @@ def glb_chunks(raw):
     return jsn, binc
 
 
+def bin_chunk_offset(raw):
+    """Absolute byte offset of the BIN chunk's PAYLOAD. Walked from the chunk
+    table rather than found by searching for the payload bytes, which could
+    match somewhere else in the file."""
+    off = 12
+    while off < len(raw):
+        clen, ctype = struct.unpack_from("<II", raw, off)
+        if ctype == 0x004E4942:
+            return off + 8
+        off += 8 + clen
+    raise AssertionError("no BIN chunk")
+
+
 def accessor(jsn, binc, i):
     a = jsn["accessors"][i]
     fmt, sz = CT[a["componentType"]]
@@ -401,8 +423,80 @@ def accessor(jsn, binc, i):
             for k in range(a["count"])]
 
 
+# ------------------------------------------------- canonicalise the UVs
+# WHY THIS EXISTS.  The UV layer is written before the bevel, so the modifier
+# interpolates it across the chamfer strips — and that interpolation is not
+# bit-stable.  Two runs of this script from the identical .blend state produced
+# GLBs that differ in 7 of 2688 UV floats by one ULP (~3e-8); POSITION, NORMAL
+# and the index buffer were byte-identical both times.  Tiny, invisible, and
+# still a defect: src/ui/assets.ts claims the models "reproduce every byte", and
+# a build that cannot be reproduced cannot be audited or diffed.
+#
+# The fix is not to fight the modifier.  The UV this file is *supposed* to carry
+# is a closed-form function of the exported position — uv = (x, -z) * K, the same
+# expression nineSlice() evaluates at runtime — so it is recomputed from the
+# decoded POSITION bytes and stamped back over the TEXCOORD_0 buffer view.  Two
+# things come free with that:
+#
+#   * the build becomes deterministic (POSITION is already bit-stable, and a
+#     float64 product rounded once to float32 is not a race), and
+#   * uv = pos * K stops being approximate.  The interpolated chamfer strips used
+#     to drift up to 5e-4 UV from the projection; now the identity holds to the
+#     float32 storage floor over the WHOLE mesh, so the baked template and every
+#     nine-sliced instance agree bit for bit instead of nearly.
+#
+# Only bytes inside the TEXCOORD_0 buffer view move.  The JSON chunk, both chunk
+# lengths, the file length and every other buffer view are asserted unchanged, so
+# the container cannot be invalidated by this step.
 with open(OUT_GLB, "rb") as f:
     d = f.read()
+_js, _bn = glb_chunks(d)
+_prim = _js["meshes"][0]["primitives"][0]
+_pa = _js["accessors"][_prim["attributes"]["POSITION"]]
+_ua = _js["accessors"][_prim["attributes"]["TEXCOORD_0"]]
+assert _pa["count"] == _ua["count"], "POSITION/TEXCOORD_0 count mismatch"
+_ubv = _js["bufferViews"][_ua["bufferView"]]
+assert _ubv.get("byteStride") is None and _ua.get("byteOffset", 0) == 0
+assert _ua["componentType"] == 5126 and _ua["type"] == "VEC2"
+assert _ubv["byteLength"] == _ua["count"] * 8
+
+_pos = accessor(_js, _bn, _prim["attributes"]["POSITION"])
+_canon = b"".join(struct.pack("<ff", x * UV_PER_UNIT, -z * UV_PER_UNIT)
+                  for (x, _y, z) in _pos)
+assert len(_canon) == _ubv["byteLength"]
+
+_bin_at = bin_chunk_offset(d)               # start of the BIN chunk payload
+_lo = _bin_at + _ubv.get("byteOffset", 0)
+_hi = _lo + _ubv["byteLength"]
+_patched = d[:_lo] + _canon + d[_hi:]
+assert len(_patched) == len(d), "UV patch changed the file length"
+assert _patched[:_lo] == d[:_lo] and _patched[_hi:] == d[_hi:], \
+    "UV patch touched bytes outside the TEXCOORD_0 buffer view"
+_moved = sum(1 for k in range(_lo, _hi) if _patched[k] != d[k])
+if _patched != d:
+    with open(OUT_GLB, "wb") as f:
+        f.write(_patched)
+print("  UV canonicalised to uv = (x, -z) * %.4f from the exported POSITION "
+      "bytes: %d of %d UV bytes rewritten" % (UV_PER_UNIT, _moved, _hi - _lo))
+
+with open(OUT_GLB, "rb") as f:
+    d = f.read()
+# Re-validate the container after the patch, from the bytes, not from _patched.
+_magic, _ver, _len = struct.unpack_from("<4sII", d, 0)
+assert _magic == b"glTF" and _ver == 2 and _len == len(d), "GLB header broken"
+_off, _seen = 12, []
+while _off < len(d):
+    _cl, _ct = struct.unpack_from("<II", d, _off)
+    assert _cl % 4 == 0, "chunk %s is not 4-byte aligned" % hex(_ct)
+    _seen.append((_ct, _cl))
+    _off += 8 + _cl
+assert _off == len(d) and [t for t, _ in _seen] == [0x4E4F534A, 0x004E4942]
+_j2, _b2 = glb_chunks(d)
+assert _j2 == _js, "the UV patch must not touch the JSON chunk"
+assert _j2["buffers"][0]["byteLength"] == len(_b2), "buffer.byteLength drifted"
+for _bv in _j2["bufferViews"]:
+    assert _bv.get("byteOffset", 0) + _bv["byteLength"] <= len(_b2), \
+        "a bufferView now overruns the BIN chunk"
 js, bn = glb_chunks(d)
 print("VERIFY file=%s size=%dB nodes=%s meshes=%s materials=%s images=%d"
       % (os.path.basename(OUT_GLB), len(d),
@@ -469,8 +563,13 @@ print("UV scale K=%.4f uv/world-unit -> %.4f world units per tile; "
       % (UV_PER_UNIT, UV_TILE_WORLD, err, len(front), ferr))
 # 1e-5 is the float32 storage floor, not slack: measured ferr is ~7e-7.
 assert ferr < 1e-5, "front face UV is not the exact planar projection"
-assert err < BEVEL_W * UV_PER_UNIT * 1.5, \
-    "some UV drifted further than the chamfer width can explain: %.6f" % err
+# Since the canonicalisation pass above, this holds over the WHOLE mesh and not
+# just the front face — chamfer strips included. It used to be bounded only by
+# the chamfer width (err < BEVEL_W * K * 1.5, i.e. 6.6e-3, measured 5.0e-4);
+# 1e-5 is now the float32 storage floor again. If this ever fires, the patch
+# stopped being applied — it did not "drift".
+assert err < 1e-5, \
+    "UV is not the exact planar projection over the whole mesh: %.9f" % err
 
 # ---- budget: project-wide, 4000 tris per asset (screw.py, hole.py, holder.py) --
 BUDGET = 4000
