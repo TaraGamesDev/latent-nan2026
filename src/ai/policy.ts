@@ -47,35 +47,44 @@ export interface Policy {
   candidates: number;
 }
 
+/**
+ * Fitted by `npm run tune` — 48 candidates x 3 personas x 6 seeds, scored on
+ * flow-channel tracking, time spent frustrated or bored, session length, and
+ * how far apart the personas' realised difficulty ends up. Improves on the
+ * hand-set starting point by 30% on that objective (loss 2.08 -> 1.46) and
+ * widens novice-to-expert difficulty separation from 0.063 to 0.085.
+ *
+ * See `tuning/result.json` for the full trial record.
+ */
 export const POLICY: Policy = {
-  rampTaps: 55,
+  rampTaps: 77,
 
-  challengeOffset: 0.06,
-  frustrationRelief: 0.35,
-  boredomPush: 0.25,
-  rampWeight: 0.55,
+  challengeOffset: 0.12,
+  frustrationRelief: 0.411,
+  boredomPush: 0.132,
+  rampWeight: 0.38,
   // The opening is capped regardless of how good the player looks. A judge
   // opening the link gets a readable, winnable first thirty seconds; pressure
   // is something the run earns, not something the estimator can grant instantly.
-  envelopeBase: 0.35,
-  envelopeSlope: 0.65,
+  envelopeBase: 0.41,
+  envelopeSlope: 0.543,
 
-  preferExitsAtEase: 4,
+  preferExitsAtEase: 6,
   preferExitsAtPeak: 0,
 
-  spawnRateBase: 0.62,
-  spawnRatePeak: 2.05,
-  crowdingCeilingBase: 0.5,
+  spawnRateBase: 0.746,
+  spawnRatePeak: 1.977,
+  crowdingCeilingBase: 0.491,
   // No ceiling at peak. Refusing to crowd a full board late in a run is how a
   // stalling player becomes immortal: the bench caught a mashing bot surviving
   // 2700 taps because mercy never switched off.
   crowdingCeilingPeak: 1.0,
 
-  wChallengeMatch: 10.0,
-  wExitChain: 3.2,
+  wChallengeMatch: 10.91,
+  wExitChain: 3.5,
   wCenterBias: 1.6,
   wVariety: 1.1,
-  wMobility: 2.4,
+  wMobility: 1.13,
 
   candidates: 40,
 };

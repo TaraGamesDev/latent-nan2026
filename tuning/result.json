@@ -1,0 +1,2346 @@
+{
+  "budget": {
+    "rounds": 8,
+    "batch": 6,
+    "seeds": 6
+  },
+  "baseline": {
+    "loss": 2.0815,
+    "separation": 0.0627,
+    "params": {
+      "rampTaps": 55,
+      "challengeOffset": 0.06,
+      "frustrationRelief": 0.35,
+      "boredomPush": 0.25,
+      "rampWeight": 0.55,
+      "envelopeBase": 0.35,
+      "envelopeSlope": 0.65,
+      "preferExitsAtEase": 4,
+      "spawnRateBase": 0.62,
+      "spawnRatePeak": 2.05,
+      "crowdingCeilingBase": 0.5,
+      "wChallengeMatch": 10,
+      "wExitChain": 3.2,
+      "wMobility": 2.4
+    },
+    "perPersona": {
+      "novice": {
+        "taps": 67.2,
+        "trackingError": 0.0646,
+        "meanChallenge": 0.5884,
+        "frustrated": 0.065,
+        "bored": 0
+      },
+      "casual": {
+        "taps": 74,
+        "trackingError": 0.0566,
+        "meanChallenge": 0.6256,
+        "frustrated": 0,
+        "bored": 0.543
+      },
+      "expert": {
+        "taps": 84.5,
+        "trackingError": 0.054,
+        "meanChallenge": 0.6511,
+        "frustrated": 0,
+        "bored": 0.855
+      }
+    }
+  },
+  "bestRandom": {
+    "loss": 1.4564,
+    "separation": 0.0846,
+    "params": {
+      "rampTaps": 77,
+      "challengeOffset": 0.12009045988088474,
+      "frustrationRelief": 0.4114270855323411,
+      "boredomPush": 0.13164539905264974,
+      "rampWeight": 0.37986762542277575,
+      "envelopeBase": 0.4104459733236581,
+      "envelopeSlope": 0.54268974828301,
+      "preferExitsAtEase": 6,
+      "spawnRateBase": 0.7457581551047042,
+      "spawnRatePeak": 1.9766792673617601,
+      "crowdingCeilingBase": 0.49131560917012396,
+      "wChallengeMatch": 10.910718820989132,
+      "wExitChain": 3.500741950236261,
+      "wMobility": 1.1330989645794034
+    },
+    "perPersona": {
+      "novice": {
+        "taps": 93,
+        "trackingError": 0.0791,
+        "meanChallenge": 0.5722,
+        "frustrated": 0.067,
+        "bored": 0
+      },
+      "casual": {
+        "taps": 87.7,
+        "trackingError": 0.0681,
+        "meanChallenge": 0.6025,
+        "frustrated": 0.003,
+        "bored": 0.223
+      },
+      "expert": {
+        "taps": 119.5,
+        "trackingError": 0.0517,
+        "meanChallenge": 0.6568,
+        "frustrated": 0,
+        "bored": 0.659
+      }
+    }
+  },
+  "bestLlm": null,
+  "winner": {
+    "source": "random",
+    "loss": 1.4564,
+    "separation": 0.0846,
+    "params": {
+      "rampTaps": 77,
+      "challengeOffset": 0.12009045988088474,
+      "frustrationRelief": 0.4114270855323411,
+      "boredomPush": 0.13164539905264974,
+      "rampWeight": 0.37986762542277575,
+      "envelopeBase": 0.4104459733236581,
+      "envelopeSlope": 0.54268974828301,
+      "preferExitsAtEase": 6,
+      "spawnRateBase": 0.7457581551047042,
+      "spawnRatePeak": 1.9766792673617601,
+      "crowdingCeilingBase": 0.49131560917012396,
+      "wChallengeMatch": 10.910718820989132,
+      "wExitChain": 3.500741950236261,
+      "wMobility": 1.1330989645794034
+    },
+    "perPersona": {
+      "novice": {
+        "taps": 93,
+        "trackingError": 0.0791,
+        "meanChallenge": 0.5722,
+        "frustrated": 0.067,
+        "bored": 0
+      },
+      "casual": {
+        "taps": 87.7,
+        "trackingError": 0.0681,
+        "meanChallenge": 0.6025,
+        "frustrated": 0.003,
+        "bored": 0.223
+      },
+      "expert": {
+        "taps": 119.5,
+        "trackingError": 0.0517,
+        "meanChallenge": 0.6568,
+        "frustrated": 0,
+        "bored": 0.659
+      }
+    }
+  },
+  "llmReasoning": [],
+  "allTrials": [
+    {
+      "source": "baseline",
+      "round": 0,
+      "loss": 2.0815,
+      "separation": 0.0627,
+      "params": {
+        "rampTaps": 55,
+        "challengeOffset": 0.06,
+        "frustrationRelief": 0.35,
+        "boredomPush": 0.25,
+        "rampWeight": 0.55,
+        "envelopeBase": 0.35,
+        "envelopeSlope": 0.65,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.62,
+        "spawnRatePeak": 2.05,
+        "crowdingCeilingBase": 0.5,
+        "wChallengeMatch": 10,
+        "wExitChain": 3.2,
+        "wMobility": 2.4
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 67.2,
+          "trackingError": 0.0646,
+          "meanChallenge": 0.5884,
+          "frustrated": 0.065,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 74,
+          "trackingError": 0.0566,
+          "meanChallenge": 0.6256,
+          "frustrated": 0,
+          "bored": 0.543
+        },
+        "expert": {
+          "taps": 84.5,
+          "trackingError": 0.054,
+          "meanChallenge": 0.6511,
+          "frustrated": 0,
+          "bored": 0.855
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 1.8863,
+      "separation": 0.0715,
+      "params": {
+        "rampTaps": 62,
+        "challengeOffset": 0.13495202818885446,
+        "frustrationRelief": 0.3165525134885684,
+        "boredomPush": 0.1874491961905733,
+        "rampWeight": 0.6360809601843357,
+        "envelopeBase": 0.34040014394558965,
+        "envelopeSlope": 0.5442128511494957,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.6544370208634064,
+        "spawnRatePeak": 2.3074354136362674,
+        "crowdingCeilingBase": 0.5343821725458838,
+        "wChallengeMatch": 12.511728759855032,
+        "wExitChain": 2.919987639412284,
+        "wMobility": 3.0757700747344643
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 78.2,
+          "trackingError": 0.0749,
+          "meanChallenge": 0.5706,
+          "frustrated": 0.037,
+          "bored": 0.036
+        },
+        "casual": {
+          "taps": 122.5,
+          "trackingError": 0.0457,
+          "meanChallenge": 0.6665,
+          "frustrated": 0.003,
+          "bored": 0.477
+        },
+        "expert": {
+          "taps": 105.7,
+          "trackingError": 0.0477,
+          "meanChallenge": 0.6421,
+          "frustrated": 0,
+          "bored": 0.81
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 4.2227,
+      "separation": 0.1295,
+      "params": {
+        "rampTaps": 59,
+        "challengeOffset": 0.12188777182018384,
+        "frustrationRelief": 0.33691391836619,
+        "boredomPush": 0.2302161668427289,
+        "rampWeight": 0.6831400680355728,
+        "envelopeBase": 0.3630697690881789,
+        "envelopeSlope": 0.5000210119760595,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.4424541629618034,
+        "spawnRatePeak": 2.009486518241465,
+        "crowdingCeilingBase": 0.45165193957509475,
+        "wChallengeMatch": 12.173922471702099,
+        "wExitChain": 3.887611255981028,
+        "wMobility": 2.816868324764073
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 14.2,
+          "trackingError": 0.1083,
+          "meanChallenge": 0.4675,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 51.3,
+          "trackingError": 0.1003,
+          "meanChallenge": 0.5323,
+          "frustrated": 0.004,
+          "bored": 0.243
+        },
+        "expert": {
+          "taps": 148,
+          "trackingError": 0.0806,
+          "meanChallenge": 0.597,
+          "frustrated": 0,
+          "bored": 0.362
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 2.2988,
+      "separation": 0.0503,
+      "params": {
+        "rampTaps": 66,
+        "challengeOffset": 0.13499211579328402,
+        "frustrationRelief": 0.17126626363024114,
+        "boredomPush": 0.3551403221674264,
+        "rampWeight": 0.4195952455513179,
+        "envelopeBase": 0.4105744285974652,
+        "envelopeSlope": 0.5628699772641994,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.5504273428581655,
+        "spawnRatePeak": 2.179895820096135,
+        "crowdingCeilingBase": 0.528058586793486,
+        "wChallengeMatch": 6.4556545205414295,
+        "wExitChain": 3.8838524064049125,
+        "wMobility": 1.0317783276550472
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 55.8,
+          "trackingError": 0.086,
+          "meanChallenge": 0.5818,
+          "frustrated": 0.061,
+          "bored": 0.044
+        },
+        "casual": {
+          "taps": 54.8,
+          "trackingError": 0.0789,
+          "meanChallenge": 0.6082,
+          "frustrated": 0.003,
+          "bored": 0.252
+        },
+        "expert": {
+          "taps": 74.3,
+          "trackingError": 0.0542,
+          "meanChallenge": 0.6322,
+          "frustrated": 0,
+          "bored": 0.744
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 2.5998,
+      "separation": -0.0139,
+      "params": {
+        "rampTaps": 51,
+        "challengeOffset": 0.10767542752437294,
+        "frustrationRelief": 0.4095966646564193,
+        "boredomPush": 0.24390004614833746,
+        "rampWeight": 0.38637184305116534,
+        "envelopeBase": 0.37100523728877305,
+        "envelopeSlope": 0.5056876699673012,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.7316243282752112,
+        "spawnRatePeak": 2.3118644991889594,
+        "crowdingCeilingBase": 0.4006519184680656,
+        "wChallengeMatch": 11.867551730945706,
+        "wExitChain": 1.620908216573298,
+        "wMobility": 3.0521564695518464
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 122.3,
+          "trackingError": 0.0522,
+          "meanChallenge": 0.6761,
+          "frustrated": 0.107,
+          "bored": 0.036
+        },
+        "casual": {
+          "taps": 95.3,
+          "trackingError": 0.0378,
+          "meanChallenge": 0.6655,
+          "frustrated": 0.002,
+          "bored": 0.687
+        },
+        "expert": {
+          "taps": 92.3,
+          "trackingError": 0.0419,
+          "meanChallenge": 0.6622,
+          "frustrated": 0,
+          "bored": 0.887
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 7.1637,
+      "separation": 0.0795,
+      "params": {
+        "rampTaps": 73,
+        "challengeOffset": 0.03609619222115725,
+        "frustrationRelief": 0.38128672728780655,
+        "boredomPush": 0.3102158372057602,
+        "rampWeight": 0.7494118749164045,
+        "envelopeBase": 0.4450984095688909,
+        "envelopeSlope": 0.5007514596218243,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.42295752230565997,
+        "spawnRatePeak": 1.988103698194027,
+        "crowdingCeilingBase": 0.5885109715512954,
+        "wChallengeMatch": 12.15379685163498,
+        "wExitChain": 2.832560544833541,
+        "wMobility": 3.0034565050154924
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 8,
+          "trackingError": 0.1308,
+          "meanChallenge": 0.4571,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 8.5,
+          "trackingError": 0.119,
+          "meanChallenge": 0.4651,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "expert": {
+          "taps": 42.7,
+          "trackingError": 0.1064,
+          "meanChallenge": 0.5366,
+          "frustrated": 0,
+          "bored": 0.31
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 1,
+      "loss": 2.3504,
+      "separation": -0.0163,
+      "params": {
+        "rampTaps": 73,
+        "challengeOffset": 0.020190289383754133,
+        "frustrationRelief": 0.3938331222278066,
+        "boredomPush": 0.12603989471681418,
+        "rampWeight": 0.6253516191616655,
+        "envelopeBase": 0.43643021439202134,
+        "envelopeSlope": 0.6647893929621205,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.7962105038808659,
+        "spawnRatePeak": 2.2886657057330013,
+        "crowdingCeilingBase": 0.6335296327946708,
+        "wChallengeMatch": 8.990068873390555,
+        "wExitChain": 2.743368041701615,
+        "wMobility": 1.6452975298743695
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 115.5,
+          "trackingError": 0.0541,
+          "meanChallenge": 0.6942,
+          "frustrated": 0.094,
+          "bored": 0.012
+        },
+        "casual": {
+          "taps": 79,
+          "trackingError": 0.0379,
+          "meanChallenge": 0.6837,
+          "frustrated": 0.015,
+          "bored": 0.585
+        },
+        "expert": {
+          "taps": 76.5,
+          "trackingError": 0.0365,
+          "meanChallenge": 0.6779,
+          "frustrated": 0,
+          "bored": 0.806
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 21.7135,
+      "separation": 0.1268,
+      "params": {
+        "rampTaps": 66,
+        "challengeOffset": 0.03057424819562584,
+        "frustrationRelief": 0.16691881101578473,
+        "boredomPush": 0.20428935734089465,
+        "rampWeight": 0.4371395582333207,
+        "envelopeBase": 0.27426700373180213,
+        "envelopeSlope": 0.5409839138155803,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.6250324271153659,
+        "spawnRatePeak": 1.7599493382498623,
+        "crowdingCeilingBase": 0.4880804380285554,
+        "wChallengeMatch": 9.654890898615122,
+        "wExitChain": 3.9039342626929283,
+        "wMobility": 1.8219511837232858
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 305.5,
+          "trackingError": 0.1051,
+          "meanChallenge": 0.6,
+          "frustrated": 0.059,
+          "bored": 0.002
+        },
+        "casual": {
+          "taps": 502.2,
+          "trackingError": 0.0542,
+          "meanChallenge": 0.7154,
+          "frustrated": 0.005,
+          "bored": 0.294
+        },
+        "expert": {
+          "taps": 456.2,
+          "trackingError": 0.0369,
+          "meanChallenge": 0.7268,
+          "frustrated": 0,
+          "bored": 0.819
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 2.4361,
+      "separation": 0.0567,
+      "params": {
+        "rampTaps": 63,
+        "challengeOffset": 0.03723565489053726,
+        "frustrationRelief": 0.22481526950141414,
+        "boredomPush": 0.33833526519592855,
+        "rampWeight": 0.7145180805586279,
+        "envelopeBase": 0.43014207547530536,
+        "envelopeSlope": 0.6114819275098853,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.7763427106896416,
+        "spawnRatePeak": 1.6202618604525925,
+        "crowdingCeilingBase": 0.459640129620675,
+        "wChallengeMatch": 11.544168436899781,
+        "wExitChain": 1.0142603479325771,
+        "wMobility": 2.234633593354374
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 61.2,
+          "trackingError": 0.0735,
+          "meanChallenge": 0.5958,
+          "frustrated": 0.054,
+          "bored": 0.013
+        },
+        "casual": {
+          "taps": 48,
+          "trackingError": 0.0592,
+          "meanChallenge": 0.6039,
+          "frustrated": 0.014,
+          "bored": 0.424
+        },
+        "expert": {
+          "taps": 69.8,
+          "trackingError": 0.0377,
+          "meanChallenge": 0.6525,
+          "frustrated": 0,
+          "bored": 0.742
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 5.4402,
+      "separation": -0.0524,
+      "params": {
+        "rampTaps": 43,
+        "challengeOffset": 0.019636000972241163,
+        "frustrationRelief": 0.271388745564036,
+        "boredomPush": 0.3278532021446154,
+        "rampWeight": 0.5123344106599689,
+        "envelopeBase": 0.4476142156403512,
+        "envelopeSlope": 0.6042171974550001,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.838290722318925,
+        "spawnRatePeak": 2.1579124281182884,
+        "crowdingCeilingBase": 0.6249415621045046,
+        "wChallengeMatch": 13.361226305365562,
+        "wExitChain": 3.4204436289146543,
+        "wMobility": 3.179363608593121
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 250.2,
+          "trackingError": 0.0541,
+          "meanChallenge": 0.737,
+          "frustrated": 0.088,
+          "bored": 0.021
+        },
+        "casual": {
+          "taps": 59.3,
+          "trackingError": 0.0443,
+          "meanChallenge": 0.6916,
+          "frustrated": 0.011,
+          "bored": 0.593
+        },
+        "expert": {
+          "taps": 58.5,
+          "trackingError": 0.0494,
+          "meanChallenge": 0.6847,
+          "frustrated": 0,
+          "bored": 0.809
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 3.949,
+      "separation": 0.0501,
+      "params": {
+        "rampTaps": 51,
+        "challengeOffset": 0.03704129287507385,
+        "frustrationRelief": 0.15682840995723382,
+        "boredomPush": 0.3460512703051791,
+        "rampWeight": 0.6629080241546035,
+        "envelopeBase": 0.41300600413233046,
+        "envelopeSlope": 0.6098161591216922,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.5446365717565641,
+        "spawnRatePeak": 1.9527241004630924,
+        "crowdingCeilingBase": 0.4133407929679379,
+        "wChallengeMatch": 13.171750424429774,
+        "wExitChain": 1.435859091579914,
+        "wMobility": 3.4719071607105434
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 44.2,
+          "trackingError": 0.0884,
+          "meanChallenge": 0.5794,
+          "frustrated": 0.037,
+          "bored": 0.174
+        },
+        "casual": {
+          "taps": 33.3,
+          "trackingError": 0.0728,
+          "meanChallenge": 0.5835,
+          "frustrated": 0.007,
+          "bored": 0.142
+        },
+        "expert": {
+          "taps": 60.8,
+          "trackingError": 0.0693,
+          "meanChallenge": 0.6295,
+          "frustrated": 0,
+          "bored": 0.721
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 7.6948,
+      "separation": 0.0535,
+      "params": {
+        "rampTaps": 80,
+        "challengeOffset": 0.14701048666611313,
+        "frustrationRelief": 0.3419737109914422,
+        "boredomPush": 0.154256319697015,
+        "rampWeight": 0.4450698020868003,
+        "envelopeBase": 0.44337663818150763,
+        "envelopeSlope": 0.5152812777669169,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.4732205320382491,
+        "spawnRatePeak": 1.7810226064175367,
+        "crowdingCeilingBase": 0.5143726911977865,
+        "wChallengeMatch": 7.157507214695215,
+        "wExitChain": 2.663254702463746,
+        "wMobility": 1.2532772596459836
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 9.7,
+          "trackingError": 0.1124,
+          "meanChallenge": 0.4612,
+          "frustrated": 0.009,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 8.5,
+          "trackingError": 0.1114,
+          "meanChallenge": 0.4631,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "expert": {
+          "taps": 28,
+          "trackingError": 0.09,
+          "meanChallenge": 0.5147,
+          "frustrated": 0,
+          "bored": 0.215
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 2,
+      "loss": 3.6584,
+      "separation": -0.042,
+      "params": {
+        "rampTaps": 51,
+        "challengeOffset": 0.059489056910388166,
+        "frustrationRelief": 0.2503495093085803,
+        "boredomPush": 0.34969620648771527,
+        "rampWeight": 0.4108108966611326,
+        "envelopeBase": 0.268496237648651,
+        "envelopeSlope": 0.682773037115112,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.556257443712093,
+        "spawnRatePeak": 1.9151714561507105,
+        "crowdingCeilingBase": 0.4069815596798435,
+        "wChallengeMatch": 6.635017508640885,
+        "wExitChain": 4.090264368802309,
+        "wMobility": 3.4059478915296495
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 156.8,
+          "trackingError": 0.1233,
+          "meanChallenge": 0.5541,
+          "frustrated": 0.057,
+          "bored": 0.026
+        },
+        "casual": {
+          "taps": 96.8,
+          "trackingError": 0.1308,
+          "meanChallenge": 0.5517,
+          "frustrated": 0.009,
+          "bored": 0.37
+        },
+        "expert": {
+          "taps": 95.2,
+          "trackingError": 0.1712,
+          "meanChallenge": 0.5121,
+          "frustrated": 0,
+          "bored": 0.824
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 15.6297,
+      "separation": 0.0165,
+      "params": {
+        "rampTaps": 61,
+        "challengeOffset": 0.09963440053397789,
+        "frustrationRelief": 0.46381582824978973,
+        "boredomPush": 0.3813169213943184,
+        "rampWeight": 0.5507328850217164,
+        "envelopeBase": 0.3040732921101153,
+        "envelopeSlope": 0.5371340410783887,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.693445389252156,
+        "spawnRatePeak": 1.880124426074326,
+        "crowdingCeilingBase": 0.4379583153408021,
+        "wChallengeMatch": 7.275224082171917,
+        "wExitChain": 1.9523711455985904,
+        "wMobility": 3.6563991520088166
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 335.8,
+          "trackingError": 0.092,
+          "meanChallenge": 0.6507,
+          "frustrated": 0.081,
+          "bored": 0.016
+        },
+        "casual": {
+          "taps": 270.7,
+          "trackingError": 0.0728,
+          "meanChallenge": 0.6369,
+          "frustrated": 0.002,
+          "bored": 0.476
+        },
+        "expert": {
+          "taps": 360.3,
+          "trackingError": 0.0762,
+          "meanChallenge": 0.6672,
+          "frustrated": 0,
+          "bored": 0.753
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 3.547,
+      "separation": 0.103,
+      "params": {
+        "rampTaps": 54,
+        "challengeOffset": 0.10156792548950762,
+        "frustrationRelief": 0.32757560882018877,
+        "boredomPush": 0.27309667274821553,
+        "rampWeight": 0.7082647048868239,
+        "envelopeBase": 0.34796635578386487,
+        "envelopeSlope": 0.5015382228884846,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.5079991300357506,
+        "spawnRatePeak": 1.7499204128980637,
+        "crowdingCeilingBase": 0.5847232692525722,
+        "wChallengeMatch": 12.539039015769958,
+        "wExitChain": 2.3839382585138083,
+        "wMobility": 3.1258256144355983
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 110,
+          "trackingError": 0.097,
+          "meanChallenge": 0.5145,
+          "frustrated": 0.027,
+          "bored": 0.001
+        },
+        "casual": {
+          "taps": 110.8,
+          "trackingError": 0.0849,
+          "meanChallenge": 0.478,
+          "frustrated": 0.001,
+          "bored": 0.028
+        },
+        "expert": {
+          "taps": 239,
+          "trackingError": 0.0605,
+          "meanChallenge": 0.6175,
+          "frustrated": 0,
+          "bored": 0.521
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 2.8107,
+      "separation": -0.0222,
+      "params": {
+        "rampTaps": 56,
+        "challengeOffset": 0.08549704245524481,
+        "frustrationRelief": 0.22412133270408957,
+        "boredomPush": 0.3249312389176339,
+        "rampWeight": 0.38612355990335345,
+        "envelopeBase": 0.40931362500414253,
+        "envelopeSlope": 0.5885389966424555,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.835344968107529,
+        "spawnRatePeak": 1.6120910953730345,
+        "crowdingCeilingBase": 0.4813520568190143,
+        "wChallengeMatch": 6.322548177093267,
+        "wExitChain": 2.2759951492771506,
+        "wMobility": 1.663329073227942
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 113,
+          "trackingError": 0.0494,
+          "meanChallenge": 0.6803,
+          "frustrated": 0.107,
+          "bored": 0.052
+        },
+        "casual": {
+          "taps": 87.2,
+          "trackingError": 0.049,
+          "meanChallenge": 0.6656,
+          "frustrated": 0.004,
+          "bored": 0.746
+        },
+        "expert": {
+          "taps": 87.2,
+          "trackingError": 0.0556,
+          "meanChallenge": 0.6581,
+          "frustrated": 0,
+          "bored": 0.901
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 1.8735,
+      "separation": 0.0182,
+      "params": {
+        "rampTaps": 76,
+        "challengeOffset": 0.12611937549663707,
+        "frustrationRelief": 0.2066275155520998,
+        "boredomPush": 0.2391997146420181,
+        "rampWeight": 0.5430299066007137,
+        "envelopeBase": 0.4223518369719386,
+        "envelopeSlope": 0.5304531958536245,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.5970318668754772,
+        "spawnRatePeak": 2.041745795495808,
+        "crowdingCeilingBase": 0.48692323282593863,
+        "wChallengeMatch": 13.051206724718213,
+        "wExitChain": 4.122143398039043,
+        "wMobility": 3.3366906521841884
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 69.3,
+          "trackingError": 0.0904,
+          "meanChallenge": 0.5466,
+          "frustrated": 0.044,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 67.2,
+          "trackingError": 0.0829,
+          "meanChallenge": 0.5491,
+          "frustrated": 0.004,
+          "bored": 0.289
+        },
+        "expert": {
+          "taps": 77.2,
+          "trackingError": 0.0819,
+          "meanChallenge": 0.5648,
+          "frustrated": 0,
+          "bored": 0.613
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 2.4297,
+      "separation": 0.0346,
+      "params": {
+        "rampTaps": 55,
+        "challengeOffset": 0.11418383605778216,
+        "frustrationRelief": 0.3511075941263698,
+        "boredomPush": 0.2115457180188969,
+        "rampWeight": 0.6564834517426789,
+        "envelopeBase": 0.3300890152808279,
+        "envelopeSlope": 0.6274566692300141,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.6626070176484063,
+        "spawnRatePeak": 2.1671868972480297,
+        "crowdingCeilingBase": 0.597656485484913,
+        "wChallengeMatch": 11.562187649309635,
+        "wExitChain": 2.72401786968112,
+        "wMobility": 3.633470759028569
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 72,
+          "trackingError": 0.0814,
+          "meanChallenge": 0.5814,
+          "frustrated": 0.048,
+          "bored": 0.1
+        },
+        "casual": {
+          "taps": 103.2,
+          "trackingError": 0.0632,
+          "meanChallenge": 0.6466,
+          "frustrated": 0.011,
+          "bored": 0.493
+        },
+        "expert": {
+          "taps": 91.2,
+          "trackingError": 0.0729,
+          "meanChallenge": 0.616,
+          "frustrated": 0,
+          "bored": 0.904
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 3,
+      "loss": 4.8372,
+      "separation": 0.0886,
+      "params": {
+        "rampTaps": 61,
+        "challengeOffset": 0.07979405480436981,
+        "frustrationRelief": 0.2302426993031986,
+        "boredomPush": 0.3839541195891798,
+        "rampWeight": 0.6584600495174527,
+        "envelopeBase": 0.3552249594591558,
+        "envelopeSlope": 0.5578428196604364,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.47816539343912157,
+        "spawnRatePeak": 1.852359749749303,
+        "crowdingCeilingBase": 0.4870809427578934,
+        "wChallengeMatch": 10.037538025528193,
+        "wExitChain": 3.092154713347554,
+        "wMobility": 2.331454045837745
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 35.8,
+          "trackingError": 0.106,
+          "meanChallenge": 0.4786,
+          "frustrated": 0.017,
+          "bored": 0.009
+        },
+        "casual": {
+          "taps": 10.3,
+          "trackingError": 0.1072,
+          "meanChallenge": 0.4285,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "expert": {
+          "taps": 79.3,
+          "trackingError": 0.0833,
+          "meanChallenge": 0.5672,
+          "frustrated": 0,
+          "bored": 0.472
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 2.9319,
+      "separation": 0.0379,
+      "params": {
+        "rampTaps": 77,
+        "challengeOffset": 0.12731177690438925,
+        "frustrationRelief": 0.45800082676578313,
+        "boredomPush": 0.19864898889791222,
+        "rampWeight": 0.5893327506259084,
+        "envelopeBase": 0.43002852536737923,
+        "envelopeSlope": 0.5751344477757812,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.6116949213668704,
+        "spawnRatePeak": 1.750356506742537,
+        "crowdingCeilingBase": 0.4837254753569141,
+        "wChallengeMatch": 7.5668943133205175,
+        "wExitChain": 4.607932575047016,
+        "wMobility": 2.403864750638604
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 71.5,
+          "trackingError": 0.071,
+          "meanChallenge": 0.587,
+          "frustrated": 0.054,
+          "bored": 0.044
+        },
+        "casual": {
+          "taps": 42.7,
+          "trackingError": 0.0803,
+          "meanChallenge": 0.5772,
+          "frustrated": 0.003,
+          "bored": 0.234
+        },
+        "expert": {
+          "taps": 96.5,
+          "trackingError": 0.0803,
+          "meanChallenge": 0.6248,
+          "frustrated": 0,
+          "bored": 0.895
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 12.2132,
+      "separation": -0.1272,
+      "params": {
+        "rampTaps": 56,
+        "challengeOffset": 0.02062383798183873,
+        "frustrationRelief": 0.4829074937850236,
+        "boredomPush": 0.2976009808015079,
+        "rampWeight": 0.4299775389023125,
+        "envelopeBase": 0.35748087321408095,
+        "envelopeSlope": 0.52073716459563,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.8041709754383192,
+        "spawnRatePeak": 2.202837245725095,
+        "crowdingCeilingBase": 0.5786922291503288,
+        "wChallengeMatch": 11.053459694609046,
+        "wExitChain": 3.4970198711380363,
+        "wMobility": 2.5361747664865106
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 520.3,
+          "trackingError": 0.1235,
+          "meanChallenge": 0.7767,
+          "frustrated": 0.122,
+          "bored": 0.005
+        },
+        "casual": {
+          "taps": 107.7,
+          "trackingError": 0.0421,
+          "meanChallenge": 0.6618,
+          "frustrated": 0.004,
+          "bored": 0.634
+        },
+        "expert": {
+          "taps": 96.7,
+          "trackingError": 0.0435,
+          "meanChallenge": 0.6495,
+          "frustrated": 0,
+          "bored": 0.876
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 2.1713,
+      "separation": 0.007,
+      "params": {
+        "rampTaps": 58,
+        "challengeOffset": 0.1294260053196922,
+        "frustrationRelief": 0.416022620932199,
+        "boredomPush": 0.1190661103464663,
+        "rampWeight": 0.37159483209252353,
+        "envelopeBase": 0.3143147812690586,
+        "envelopeSlope": 0.6475693815737031,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.6891206496860832,
+        "spawnRatePeak": 2.2839994383975863,
+        "crowdingCeilingBase": 0.5154427340370603,
+        "wChallengeMatch": 13.839637389406562,
+        "wExitChain": 4.752772414125502,
+        "wMobility": 3.455974431242794
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 106.8,
+          "trackingError": 0.0791,
+          "meanChallenge": 0.6269,
+          "frustrated": 0.084,
+          "bored": 0.002
+        },
+        "casual": {
+          "taps": 96.3,
+          "trackingError": 0.0526,
+          "meanChallenge": 0.6273,
+          "frustrated": 0.003,
+          "bored": 0.401
+        },
+        "expert": {
+          "taps": 92.8,
+          "trackingError": 0.0454,
+          "meanChallenge": 0.6339,
+          "frustrated": 0,
+          "bored": 0.842
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 8.9702,
+      "separation": -0.1224,
+      "params": {
+        "rampTaps": 79,
+        "challengeOffset": 0.10002358542988077,
+        "frustrationRelief": 0.23581111156381665,
+        "boredomPush": 0.33681892575696115,
+        "rampWeight": 0.5707241989672184,
+        "envelopeBase": 0.26522927088662984,
+        "envelopeSlope": 0.6361459351028316,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.8002267663599923,
+        "spawnRatePeak": 2.1327175034210084,
+        "crowdingCeilingBase": 0.6351154559291899,
+        "wChallengeMatch": 8.865670595318079,
+        "wExitChain": 4.7836075918748975,
+        "wMobility": 1.9768093621823937
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 317,
+          "trackingError": 0.0512,
+          "meanChallenge": 0.7216,
+          "frustrated": 0.107,
+          "bored": 0.011
+        },
+        "casual": {
+          "taps": 213.3,
+          "trackingError": 0.0406,
+          "meanChallenge": 0.6522,
+          "frustrated": 0.005,
+          "bored": 0.409
+        },
+        "expert": {
+          "taps": 121.8,
+          "trackingError": 0.058,
+          "meanChallenge": 0.5992,
+          "frustrated": 0,
+          "bored": 0.886
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 12.129,
+      "separation": 0.211,
+      "params": {
+        "rampTaps": 68,
+        "challengeOffset": 0.09771498976042493,
+        "frustrationRelief": 0.34661195209482687,
+        "boredomPush": 0.2790384729392827,
+        "rampWeight": 0.7384940134361386,
+        "envelopeBase": 0.2576870744582266,
+        "envelopeSlope": 0.5545871609356254,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.4764291564701125,
+        "spawnRatePeak": 2.0100100386887787,
+        "crowdingCeilingBase": 0.6479500290937722,
+        "wChallengeMatch": 6.532339621335268,
+        "wExitChain": 3.0920155411586165,
+        "wMobility": 2.7334551245439798
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 139.7,
+          "trackingError": 0.1159,
+          "meanChallenge": 0.4847,
+          "frustrated": 0.023,
+          "bored": 0.043
+        },
+        "casual": {
+          "taps": 305.7,
+          "trackingError": 0.0875,
+          "meanChallenge": 0.5779,
+          "frustrated": 0.001,
+          "bored": 0.178
+        },
+        "expert": {
+          "taps": 423.5,
+          "trackingError": 0.1078,
+          "meanChallenge": 0.6957,
+          "frustrated": 0,
+          "bored": 0.562
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 4,
+      "loss": 2.8792,
+      "separation": 0.0724,
+      "params": {
+        "rampTaps": 84,
+        "challengeOffset": 0.016808619874063877,
+        "frustrationRelief": 0.1679775211610831,
+        "boredomPush": 0.39132582412566996,
+        "rampWeight": 0.6792967785149813,
+        "envelopeBase": 0.32386224674992264,
+        "envelopeSlope": 0.5982058216468431,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.4491236245725304,
+        "spawnRatePeak": 2.3927633557468653,
+        "crowdingCeilingBase": 0.4372606703313068,
+        "wChallengeMatch": 7.579762468114495,
+        "wExitChain": 2.525380864739418,
+        "wMobility": 2.106905199121684
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 55.3,
+          "trackingError": 0.0963,
+          "meanChallenge": 0.51,
+          "frustrated": 0.032,
+          "bored": 0.024
+        },
+        "casual": {
+          "taps": 37.8,
+          "trackingError": 0.1251,
+          "meanChallenge": 0.4994,
+          "frustrated": 0,
+          "bored": 0.075
+        },
+        "expert": {
+          "taps": 84.3,
+          "trackingError": 0.0801,
+          "meanChallenge": 0.5823,
+          "frustrated": 0,
+          "bored": 0.616
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 3.0257,
+      "separation": 0.0058,
+      "params": {
+        "rampTaps": 65,
+        "challengeOffset": 0.06650133978109807,
+        "frustrationRelief": 0.2939868041314184,
+        "boredomPush": 0.20276060074102137,
+        "rampWeight": 0.4940524040721357,
+        "envelopeBase": 0.36025706776417793,
+        "envelopeSlope": 0.6599211745196953,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.5824017323087901,
+        "spawnRatePeak": 2.288840251788497,
+        "crowdingCeilingBase": 0.6299224568414502,
+        "wChallengeMatch": 8.030700461938977,
+        "wExitChain": 3.8049928965047,
+        "wMobility": 2.5828208783641458
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 74.7,
+          "trackingError": 0.1182,
+          "meanChallenge": 0.5513,
+          "frustrated": 0.051,
+          "bored": 0.037
+        },
+        "casual": {
+          "taps": 89.5,
+          "trackingError": 0.1303,
+          "meanChallenge": 0.5617,
+          "frustrated": 0.013,
+          "bored": 0.532
+        },
+        "expert": {
+          "taps": 88.3,
+          "trackingError": 0.1379,
+          "meanChallenge": 0.5571,
+          "frustrated": 0.002,
+          "bored": 0.896
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 2.4184,
+      "separation": 0.0568,
+      "params": {
+        "rampTaps": 39,
+        "challengeOffset": 0.09036761212628334,
+        "frustrationRelief": 0.42562756161205473,
+        "boredomPush": 0.2119171626167372,
+        "rampWeight": 0.734868798777461,
+        "envelopeBase": 0.3379165254998952,
+        "envelopeSlope": 0.6072110662353225,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.5172781295608729,
+        "spawnRatePeak": 1.8079157320782542,
+        "crowdingCeilingBase": 0.4139318204019219,
+        "wChallengeMatch": 7.504122395068407,
+        "wExitChain": 3.9496147371828556,
+        "wMobility": 1.896744363475591
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 62.5,
+          "trackingError": 0.0741,
+          "meanChallenge": 0.5936,
+          "frustrated": 0.057,
+          "bored": 0.049
+        },
+        "casual": {
+          "taps": 69.3,
+          "trackingError": 0.0705,
+          "meanChallenge": 0.6215,
+          "frustrated": 0,
+          "bored": 0.651
+        },
+        "expert": {
+          "taps": 82.5,
+          "trackingError": 0.0653,
+          "meanChallenge": 0.6504,
+          "frustrated": 0,
+          "bored": 0.885
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 2.0128,
+      "separation": 0.0617,
+      "params": {
+        "rampTaps": 80,
+        "challengeOffset": 0.05456837847596034,
+        "frustrationRelief": 0.4278141373768448,
+        "boredomPush": 0.33088010861538353,
+        "rampWeight": 0.660341976955533,
+        "envelopeBase": 0.4049722455907613,
+        "envelopeSlope": 0.5313497938332148,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.7922508471878246,
+        "spawnRatePeak": 1.8900242501869797,
+        "crowdingCeilingBase": 0.44617798770777883,
+        "wChallengeMatch": 8.627247704192996,
+        "wExitChain": 3.152557909488678,
+        "wMobility": 1.8996999133378267
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 115,
+          "trackingError": 0.083,
+          "meanChallenge": 0.5851,
+          "frustrated": 0.069,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 143,
+          "trackingError": 0.0699,
+          "meanChallenge": 0.6551,
+          "frustrated": 0.009,
+          "bored": 0.179
+        },
+        "expert": {
+          "taps": 131.7,
+          "trackingError": 0.0629,
+          "meanChallenge": 0.6468,
+          "frustrated": 0,
+          "bored": 0.751
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 21.591,
+      "separation": 0.072,
+      "params": {
+        "rampTaps": 68,
+        "challengeOffset": 0.07235370984999463,
+        "frustrationRelief": 0.1794434478506446,
+        "boredomPush": 0.13273288833443075,
+        "rampWeight": 0.4306349248625338,
+        "envelopeBase": 0.31538960156030954,
+        "envelopeSlope": 0.564244816894643,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.7795799551298842,
+        "spawnRatePeak": 1.8657035516574978,
+        "crowdingCeilingBase": 0.6264055493287742,
+        "wChallengeMatch": 8.393996084108949,
+        "wExitChain": 1.9341325592249632,
+        "wMobility": 2.97582365013659
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 260.5,
+          "trackingError": 0.0764,
+          "meanChallenge": 0.6507,
+          "frustrated": 0.096,
+          "bored": 0.068
+        },
+        "casual": {
+          "taps": 600,
+          "trackingError": 0.0383,
+          "meanChallenge": 0.8313,
+          "frustrated": 0.005,
+          "bored": 0.627
+        },
+        "expert": {
+          "taps": 362.8,
+          "trackingError": 0.0573,
+          "meanChallenge": 0.7227,
+          "frustrated": 0,
+          "bored": 0.913
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 2.9518,
+      "separation": 0.1042,
+      "params": {
+        "rampTaps": 43,
+        "challengeOffset": 0.017013077228330075,
+        "frustrationRelief": 0.48259001243859523,
+        "boredomPush": 0.2199671612121165,
+        "rampWeight": 0.6947637069039047,
+        "envelopeBase": 0.4167622777633369,
+        "envelopeSlope": 0.7343234404106624,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.5348787036258728,
+        "spawnRatePeak": 1.6745584044605495,
+        "crowdingCeilingBase": 0.5796851498656906,
+        "wChallengeMatch": 11.556512743234634,
+        "wExitChain": 2.4304285664111376,
+        "wMobility": 1.1218302808701992
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 39.3,
+          "trackingError": 0.0878,
+          "meanChallenge": 0.5541,
+          "frustrated": 0.027,
+          "bored": 0.034
+        },
+        "casual": {
+          "taps": 46.3,
+          "trackingError": 0.071,
+          "meanChallenge": 0.6096,
+          "frustrated": 0.002,
+          "bored": 0.21
+        },
+        "expert": {
+          "taps": 59.3,
+          "trackingError": 0.0822,
+          "meanChallenge": 0.6584,
+          "frustrated": 0,
+          "bored": 0.454
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 5,
+      "loss": 2.9675,
+      "separation": -0.0187,
+      "params": {
+        "rampTaps": 49,
+        "challengeOffset": 0.050075475533958524,
+        "frustrationRelief": 0.17390584503300488,
+        "boredomPush": 0.273428504401818,
+        "rampWeight": 0.5710879845544696,
+        "envelopeBase": 0.41538888933137064,
+        "envelopeSlope": 0.7485167011618614,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.7269382261205465,
+        "spawnRatePeak": 2.1053834330290555,
+        "crowdingCeilingBase": 0.4474599798326381,
+        "wChallengeMatch": 12.769903717562556,
+        "wExitChain": 1.1470965119078755,
+        "wMobility": 1.4923588372766972
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 65.3,
+          "trackingError": 0.0564,
+          "meanChallenge": 0.6675,
+          "frustrated": 0.075,
+          "bored": 0.045
+        },
+        "casual": {
+          "taps": 52.8,
+          "trackingError": 0.0619,
+          "meanChallenge": 0.6543,
+          "frustrated": 0.003,
+          "bored": 0.338
+        },
+        "expert": {
+          "taps": 48.7,
+          "trackingError": 0.053,
+          "meanChallenge": 0.6488,
+          "frustrated": 0,
+          "bored": 0.699
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 2.747,
+      "separation": -0.036,
+      "params": {
+        "rampTaps": 68,
+        "challengeOffset": 0.009369587630499153,
+        "frustrationRelief": 0.2122933241422288,
+        "boredomPush": 0.10817121781874449,
+        "rampWeight": 0.4821960159577429,
+        "envelopeBase": 0.4084775856696069,
+        "envelopeSlope": 0.6073695273371413,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.8074334957404062,
+        "spawnRatePeak": 1.9221116356551646,
+        "crowdingCeilingBase": 0.5739615994156338,
+        "wChallengeMatch": 9.98518543317914,
+        "wExitChain": 1.1219551069661975,
+        "wMobility": 2.77966902917251
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 130,
+          "trackingError": 0.0458,
+          "meanChallenge": 0.7005,
+          "frustrated": 0.12,
+          "bored": 0.064
+        },
+        "casual": {
+          "taps": 85.8,
+          "trackingError": 0.0335,
+          "meanChallenge": 0.6697,
+          "frustrated": 0.002,
+          "bored": 0.717
+        },
+        "expert": {
+          "taps": 85.8,
+          "trackingError": 0.0347,
+          "meanChallenge": 0.6645,
+          "frustrated": 0,
+          "bored": 0.899
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 2.482,
+      "separation": 0.0192,
+      "params": {
+        "rampTaps": 48,
+        "challengeOffset": 0.055974065198097375,
+        "frustrationRelief": 0.33628051206469534,
+        "boredomPush": 0.16918151353020222,
+        "rampWeight": 0.6080413438379764,
+        "envelopeBase": 0.3453760351985693,
+        "envelopeSlope": 0.5839347016299143,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.44655018995981666,
+        "spawnRatePeak": 2.2191901514306664,
+        "crowdingCeilingBase": 0.4315241279313341,
+        "wChallengeMatch": 8.023989591747522,
+        "wExitChain": 1.778216714039445,
+        "wMobility": 2.1262097370345145
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 63.5,
+          "trackingError": 0.0862,
+          "meanChallenge": 0.563,
+          "frustrated": 0.056,
+          "bored": 0.027
+        },
+        "casual": {
+          "taps": 52.2,
+          "trackingError": 0.092,
+          "meanChallenge": 0.5056,
+          "frustrated": 0.002,
+          "bored": 0.294
+        },
+        "expert": {
+          "taps": 72.3,
+          "trackingError": 0.0765,
+          "meanChallenge": 0.5822,
+          "frustrated": 0,
+          "bored": 0.752
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 4.0536,
+      "separation": 0.1377,
+      "params": {
+        "rampTaps": 68,
+        "challengeOffset": 0.047801965184044094,
+        "frustrationRelief": 0.16583821433596313,
+        "boredomPush": 0.15615608105435969,
+        "rampWeight": 0.4831054577603936,
+        "envelopeBase": 0.3691963849589229,
+        "envelopeSlope": 0.5507761092158034,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.41832622406072917,
+        "spawnRatePeak": 1.955865089222789,
+        "crowdingCeilingBase": 0.5557752985390835,
+        "wChallengeMatch": 11.660997347906232,
+        "wExitChain": 1.8904351042583585,
+        "wMobility": 3.7964973074849695
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 12.7,
+          "trackingError": 0.1129,
+          "meanChallenge": 0.4609,
+          "frustrated": 0.009,
+          "bored": 0.028
+        },
+        "casual": {
+          "taps": 56.7,
+          "trackingError": 0.1105,
+          "meanChallenge": 0.5399,
+          "frustrated": 0.001,
+          "bored": 0.268
+        },
+        "expert": {
+          "taps": 93.2,
+          "trackingError": 0.0879,
+          "meanChallenge": 0.5987,
+          "frustrated": 0,
+          "bored": 0.635
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 9.4703,
+      "separation": -0.0766,
+      "params": {
+        "rampTaps": 49,
+        "challengeOffset": 0.123886118712835,
+        "frustrationRelief": 0.44881605324335394,
+        "boredomPush": 0.25629440464545045,
+        "rampWeight": 0.5823653356172145,
+        "envelopeBase": 0.3039016094058752,
+        "envelopeSlope": 0.5719086937606335,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.7676315376069397,
+        "spawnRatePeak": 2.128929132223129,
+        "crowdingCeilingBase": 0.45391897150548177,
+        "wChallengeMatch": 8.405494753271341,
+        "wExitChain": 2.6460120491683483,
+        "wMobility": 1.3443591985851526
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 288.2,
+          "trackingError": 0.0434,
+          "meanChallenge": 0.7274,
+          "frustrated": 0.11,
+          "bored": 0.009
+        },
+        "casual": {
+          "taps": 264.5,
+          "trackingError": 0.0361,
+          "meanChallenge": 0.719,
+          "frustrated": 0.004,
+          "bored": 0.669
+        },
+        "expert": {
+          "taps": 95.3,
+          "trackingError": 0.0376,
+          "meanChallenge": 0.6508,
+          "frustrated": 0,
+          "bored": 0.848
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 2.4717,
+      "separation": -0.0295,
+      "params": {
+        "rampTaps": 52,
+        "challengeOffset": 0.04472357884515077,
+        "frustrationRelief": 0.31301517541287466,
+        "boredomPush": 0.16725098325405272,
+        "rampWeight": 0.6964209915138782,
+        "envelopeBase": 0.37418360258452593,
+        "envelopeSlope": 0.6130290833534673,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.7201152336550877,
+        "spawnRatePeak": 2.294301673956215,
+        "crowdingCeilingBase": 0.5915673348121345,
+        "wChallengeMatch": 12.657693749293685,
+        "wExitChain": 3.656819867901504,
+        "wMobility": 2.605392645811662
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 96.8,
+          "trackingError": 0.0435,
+          "meanChallenge": 0.6873,
+          "frustrated": 0.132,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 80.8,
+          "trackingError": 0.0403,
+          "meanChallenge": 0.6686,
+          "frustrated": 0.004,
+          "bored": 0.557
+        },
+        "expert": {
+          "taps": 76.3,
+          "trackingError": 0.0442,
+          "meanChallenge": 0.6577,
+          "frustrated": 0,
+          "bored": 0.858
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 6,
+      "loss": 12.6847,
+      "separation": 0.0309,
+      "params": {
+        "rampTaps": 39,
+        "challengeOffset": 0.11796895681181922,
+        "frustrationRelief": 0.21688577634049577,
+        "boredomPush": 0.1395946049829945,
+        "rampWeight": 0.4956649819388985,
+        "envelopeBase": 0.30145331425592303,
+        "envelopeSlope": 0.586027986893896,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.4435142804635689,
+        "spawnRatePeak": 2.184380626492202,
+        "crowdingCeilingBase": 0.5599128104280681,
+        "wChallengeMatch": 10.61630467325449,
+        "wExitChain": 4.977678824216127,
+        "wMobility": 3.0394693443086
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 318,
+          "trackingError": 0.0907,
+          "meanChallenge": 0.6988,
+          "frustrated": 0.08,
+          "bored": 0.052
+        },
+        "casual": {
+          "taps": 255.3,
+          "trackingError": 0.0439,
+          "meanChallenge": 0.698,
+          "frustrated": 0.005,
+          "bored": 0.671
+        },
+        "expert": {
+          "taps": 257.2,
+          "trackingError": 0.0388,
+          "meanChallenge": 0.7296,
+          "frustrated": 0,
+          "bored": 0.902
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 2.5203,
+      "separation": 0.0207,
+      "params": {
+        "rampTaps": 42,
+        "challengeOffset": 0.03901845981599763,
+        "frustrationRelief": 0.20648970829788593,
+        "boredomPush": 0.24352312746923419,
+        "rampWeight": 0.4830048167146742,
+        "envelopeBase": 0.3260403799824417,
+        "envelopeSlope": 0.6967083044000901,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.6717553803231567,
+        "spawnRatePeak": 1.9581213757395743,
+        "crowdingCeilingBase": 0.5992808324284852,
+        "wChallengeMatch": 10.990645907819271,
+        "wExitChain": 2.9035973185673356,
+        "wMobility": 3.2804642589762807
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 67.2,
+          "trackingError": 0.0837,
+          "meanChallenge": 0.5927,
+          "frustrated": 0.046,
+          "bored": 0.058
+        },
+        "casual": {
+          "taps": 75,
+          "trackingError": 0.0856,
+          "meanChallenge": 0.6225,
+          "frustrated": 0.002,
+          "bored": 0.512
+        },
+        "expert": {
+          "taps": 72.3,
+          "trackingError": 0.0908,
+          "meanChallenge": 0.6135,
+          "frustrated": 0,
+          "bored": 0.869
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 3.2287,
+      "separation": -0.0828,
+      "params": {
+        "rampTaps": 38,
+        "challengeOffset": 0.018140713626053184,
+        "frustrationRelief": 0.16116365460911766,
+        "boredomPush": 0.3814776073675603,
+        "rampWeight": 0.6739473183639347,
+        "envelopeBase": 0.414245293289423,
+        "envelopeSlope": 0.611734865931794,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.542102864687331,
+        "spawnRatePeak": 2.128450784645975,
+        "crowdingCeilingBase": 0.5189056455041282,
+        "wChallengeMatch": 8.968389090150595,
+        "wExitChain": 1.3521596370264888,
+        "wMobility": 3.3491231652442366
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 157.7,
+          "trackingError": 0.0687,
+          "meanChallenge": 0.7203,
+          "frustrated": 0.093,
+          "bored": 0.115
+        },
+        "casual": {
+          "taps": 58.2,
+          "trackingError": 0.0772,
+          "meanChallenge": 0.6657,
+          "frustrated": 0.025,
+          "bored": 0.19
+        },
+        "expert": {
+          "taps": 61.8,
+          "trackingError": 0.1083,
+          "meanChallenge": 0.6376,
+          "frustrated": 0,
+          "bored": 0.67
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 3.0079,
+      "separation": 0.016,
+      "params": {
+        "rampTaps": 62,
+        "challengeOffset": 0.11752514062682166,
+        "frustrationRelief": 0.21068783396622165,
+        "boredomPush": 0.10609812478069217,
+        "rampWeight": 0.39213349465280767,
+        "envelopeBase": 0.42363511919975283,
+        "envelopeSlope": 0.7033521496341564,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.5139238157775253,
+        "spawnRatePeak": 1.958425739966333,
+        "crowdingCeilingBase": 0.5720852529397235,
+        "wChallengeMatch": 6.036859903484583,
+        "wExitChain": 4.307992300949991,
+        "wMobility": 3.166443425230682
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 56.5,
+          "trackingError": 0.1036,
+          "meanChallenge": 0.5662,
+          "frustrated": 0.062,
+          "bored": 0.05
+        },
+        "casual": {
+          "taps": 57.2,
+          "trackingError": 0.1175,
+          "meanChallenge": 0.5645,
+          "frustrated": 0.004,
+          "bored": 0.425
+        },
+        "expert": {
+          "taps": 74.8,
+          "trackingError": 0.151,
+          "meanChallenge": 0.5822,
+          "frustrated": 0,
+          "bored": 0.781
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 3.0608,
+      "separation": -0.0349,
+      "params": {
+        "rampTaps": 37,
+        "challengeOffset": 0.02356533457059413,
+        "frustrationRelief": 0.19228558070026336,
+        "boredomPush": 0.3719148550415412,
+        "rampWeight": 0.4824291355907917,
+        "envelopeBase": 0.3201564465183765,
+        "envelopeSlope": 0.6903079305193387,
+        "preferExitsAtEase": 5,
+        "spawnRateBase": 0.5091331904754043,
+        "spawnRatePeak": 1.7127120630815627,
+        "crowdingCeilingBase": 0.419080609024968,
+        "wChallengeMatch": 12.778908394277096,
+        "wExitChain": 3.6873064348474145,
+        "wMobility": 1.823130855569616
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 158,
+          "trackingError": 0.0818,
+          "meanChallenge": 0.6434,
+          "frustrated": 0.062,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 58.5,
+          "trackingError": 0.0963,
+          "meanChallenge": 0.5689,
+          "frustrated": 0.002,
+          "bored": 0.374
+        },
+        "expert": {
+          "taps": 67,
+          "trackingError": 0.0901,
+          "meanChallenge": 0.6085,
+          "frustrated": 0,
+          "bored": 0.682
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 11.12,
+      "separation": 0.0027,
+      "params": {
+        "rampTaps": 47,
+        "challengeOffset": 0.030905830522533505,
+        "frustrationRelief": 0.32521673493320125,
+        "boredomPush": 0.29627456334419555,
+        "rampWeight": 0.5761101812124252,
+        "envelopeBase": 0.33564096395857634,
+        "envelopeSlope": 0.5003540007164702,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.6222382462350652,
+        "spawnRatePeak": 2.353801128268242,
+        "crowdingCeilingBase": 0.5913209987687879,
+        "wChallengeMatch": 13.318362392485142,
+        "wExitChain": 3.998251583427191,
+        "wMobility": 3.692352884914726
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 254.5,
+          "trackingError": 0.056,
+          "meanChallenge": 0.662,
+          "frustrated": 0.092,
+          "bored": 0.036
+        },
+        "casual": {
+          "taps": 343.7,
+          "trackingError": 0.0319,
+          "meanChallenge": 0.7163,
+          "frustrated": 0.004,
+          "bored": 0.503
+        },
+        "expert": {
+          "taps": 174,
+          "trackingError": 0.0447,
+          "meanChallenge": 0.6647,
+          "frustrated": 0,
+          "bored": 0.896
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 7,
+      "loss": 3.2584,
+      "separation": -0.0222,
+      "params": {
+        "rampTaps": 82,
+        "challengeOffset": 0.03596700746566057,
+        "frustrationRelief": 0.4126055171247571,
+        "boredomPush": 0.2730714367935434,
+        "rampWeight": 0.45739118624478575,
+        "envelopeBase": 0.3213994325138628,
+        "envelopeSlope": 0.5904681391548365,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.888158056512475,
+        "spawnRatePeak": 2.372903340496123,
+        "crowdingCeilingBase": 0.5553790073958226,
+        "wChallengeMatch": 9.115368902683258,
+        "wExitChain": 3.148288977332413,
+        "wMobility": 1.8535471064969897
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 163.5,
+          "trackingError": 0.0637,
+          "meanChallenge": 0.6566,
+          "frustrated": 0.099,
+          "bored": 0.047
+        },
+        "casual": {
+          "taps": 127.3,
+          "trackingError": 0.0405,
+          "meanChallenge": 0.6341,
+          "frustrated": 0.004,
+          "bored": 0.498
+        },
+        "expert": {
+          "taps": 121,
+          "trackingError": 0.0497,
+          "meanChallenge": 0.6343,
+          "frustrated": 0,
+          "bored": 0.895
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 13.2355,
+      "separation": -0.2015,
+      "params": {
+        "rampTaps": 69,
+        "challengeOffset": 0.12584769919048994,
+        "frustrationRelief": 0.498142529989127,
+        "boredomPush": 0.21420300833415243,
+        "rampWeight": 0.5891794979572296,
+        "envelopeBase": 0.2641256931703538,
+        "envelopeSlope": 0.6179621093324386,
+        "preferExitsAtEase": 4,
+        "spawnRateBase": 0.7764145356835798,
+        "spawnRatePeak": 2.079528915695846,
+        "crowdingCeilingBase": 0.5871678491006606,
+        "wChallengeMatch": 6.260129591450095,
+        "wExitChain": 4.927915118634701,
+        "wMobility": 2.325710366247222
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 459.3,
+          "trackingError": 0.0664,
+          "meanChallenge": 0.7737,
+          "frustrated": 0.107,
+          "bored": 0.048
+        },
+        "casual": {
+          "taps": 219.5,
+          "trackingError": 0.0534,
+          "meanChallenge": 0.6583,
+          "frustrated": 0.004,
+          "bored": 0.635
+        },
+        "expert": {
+          "taps": 118.8,
+          "trackingError": 0.0874,
+          "meanChallenge": 0.5722,
+          "frustrated": 0,
+          "bored": 0.918
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 2.2728,
+      "separation": 0.0186,
+      "params": {
+        "rampTaps": 48,
+        "challengeOffset": 0.13616852330742404,
+        "frustrationRelief": 0.15605407000984997,
+        "boredomPush": 0.20077383557800205,
+        "rampWeight": 0.7208293398842216,
+        "envelopeBase": 0.34073664881289006,
+        "envelopeSlope": 0.6472790453699417,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.4949564516777173,
+        "spawnRatePeak": 2.391396963223815,
+        "crowdingCeilingBase": 0.5015338799334131,
+        "wChallengeMatch": 13.007407465949655,
+        "wExitChain": 4.542558624409139,
+        "wMobility": 1.8343623369000852
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 67.2,
+          "trackingError": 0.0518,
+          "meanChallenge": 0.6494,
+          "frustrated": 0.074,
+          "bored": 0.002
+        },
+        "casual": {
+          "taps": 71.2,
+          "trackingError": 0.04,
+          "meanChallenge": 0.6541,
+          "frustrated": 0.005,
+          "bored": 0.655
+        },
+        "expert": {
+          "taps": 75.3,
+          "trackingError": 0.0364,
+          "meanChallenge": 0.668,
+          "frustrated": 0,
+          "bored": 0.848
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 6.8979,
+      "separation": 0.0666,
+      "params": {
+        "rampTaps": 75,
+        "challengeOffset": 0.09565864072646946,
+        "frustrationRelief": 0.4894324501277879,
+        "boredomPush": 0.2724660747218878,
+        "rampWeight": 0.4314421797171235,
+        "envelopeBase": 0.42598294294439254,
+        "envelopeSlope": 0.5658181671169586,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.49554909670259806,
+        "spawnRatePeak": 2.2039475593715907,
+        "crowdingCeilingBase": 0.5381987425265834,
+        "wChallengeMatch": 12.848398996517062,
+        "wExitChain": 3.1282859863713384,
+        "wMobility": 2.818803215865046
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 13,
+          "trackingError": 0.105,
+          "meanChallenge": 0.4656,
+          "frustrated": 0.017,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 10.8,
+          "trackingError": 0.1003,
+          "meanChallenge": 0.4616,
+          "frustrated": 0,
+          "bored": 0
+        },
+        "expert": {
+          "taps": 38.2,
+          "trackingError": 0.0837,
+          "meanChallenge": 0.5322,
+          "frustrated": 0,
+          "bored": 0.303
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 4.1776,
+      "separation": 0.1391,
+      "params": {
+        "rampTaps": 80,
+        "challengeOffset": 0.07873783613322302,
+        "frustrationRelief": 0.3478229101398028,
+        "boredomPush": 0.3652960882056505,
+        "rampWeight": 0.5158939755521714,
+        "envelopeBase": 0.37959000053815545,
+        "envelopeSlope": 0.652906545670703,
+        "preferExitsAtEase": 2,
+        "spawnRateBase": 0.5074939855607227,
+        "spawnRatePeak": 2.3341216698288916,
+        "crowdingCeilingBase": 0.5633717173244804,
+        "wChallengeMatch": 13.276059502735734,
+        "wExitChain": 2.6866765823215246,
+        "wMobility": 3.865011477144435
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 14.2,
+          "trackingError": 0.1139,
+          "meanChallenge": 0.4888,
+          "frustrated": 0.009,
+          "bored": 0.033
+        },
+        "casual": {
+          "taps": 53,
+          "trackingError": 0.0777,
+          "meanChallenge": 0.5682,
+          "frustrated": 0.011,
+          "bored": 0.342
+        },
+        "expert": {
+          "taps": 84.8,
+          "trackingError": 0.0562,
+          "meanChallenge": 0.6279,
+          "frustrated": 0,
+          "bored": 0.716
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 1.4564,
+      "separation": 0.0846,
+      "params": {
+        "rampTaps": 77,
+        "challengeOffset": 0.12009045988088474,
+        "frustrationRelief": 0.4114270855323411,
+        "boredomPush": 0.13164539905264974,
+        "rampWeight": 0.37986762542277575,
+        "envelopeBase": 0.4104459733236581,
+        "envelopeSlope": 0.54268974828301,
+        "preferExitsAtEase": 6,
+        "spawnRateBase": 0.7457581551047042,
+        "spawnRatePeak": 1.9766792673617601,
+        "crowdingCeilingBase": 0.49131560917012396,
+        "wChallengeMatch": 10.910718820989132,
+        "wExitChain": 3.500741950236261,
+        "wMobility": 1.1330989645794034
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 93,
+          "trackingError": 0.0791,
+          "meanChallenge": 0.5722,
+          "frustrated": 0.067,
+          "bored": 0
+        },
+        "casual": {
+          "taps": 87.7,
+          "trackingError": 0.0681,
+          "meanChallenge": 0.6025,
+          "frustrated": 0.003,
+          "bored": 0.223
+        },
+        "expert": {
+          "taps": 119.5,
+          "trackingError": 0.0517,
+          "meanChallenge": 0.6568,
+          "frustrated": 0,
+          "bored": 0.659
+        }
+      }
+    },
+    {
+      "source": "random",
+      "round": 8,
+      "loss": 1.9752,
+      "separation": 0.0811,
+      "params": {
+        "rampTaps": 63,
+        "challengeOffset": 0.06234828812303021,
+        "frustrationRelief": 0.3972578024724498,
+        "boredomPush": 0.3151822485262529,
+        "rampWeight": 0.6370040009729564,
+        "envelopeBase": 0.25099399806931616,
+        "envelopeSlope": 0.6936300863162614,
+        "preferExitsAtEase": 3,
+        "spawnRateBase": 0.6715246467851103,
+        "spawnRatePeak": 1.9890681164339186,
+        "crowdingCeilingBase": 0.5374866306432523,
+        "wChallengeMatch": 13.021178971976042,
+        "wExitChain": 2.844283200800419,
+        "wMobility": 2.212849578121677
+      },
+      "perPersona": {
+        "novice": {
+          "taps": 76.7,
+          "trackingError": 0.0891,
+          "meanChallenge": 0.5584,
+          "frustrated": 0.048,
+          "bored": 0.061
+        },
+        "casual": {
+          "taps": 114.8,
+          "trackingError": 0.0471,
+          "meanChallenge": 0.6384,
+          "frustrated": 0.005,
+          "bored": 0.426
+        },
+        "expert": {
+          "taps": 111.8,
+          "trackingError": 0.0365,
+          "meanChallenge": 0.6395,
+          "frustrated": 0,
+          "bored": 0.91
+        }
+      }
+    }
+  ]
+}
