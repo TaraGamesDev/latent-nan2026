@@ -13,7 +13,7 @@
  *   npm run bench
  */
 
-import { MATCH } from '../core/tiles';
+import { HOLDER_CAPACITY } from '../core/plates';
 import { makeRng } from '../core/rng';
 import { PERSONAS, type PersonaName, chooseTap, thinkTime } from '../ai/bots';
 import { debtOf } from '../ai/assigner';
@@ -67,15 +67,15 @@ function playOne(kind: PersonaName, seed: number): RunResult {
     if (g.board.undecided < debtOf(g.ledger)) breaches++;
 
     const s = statsOf(g.board);
-    singlesSum += s.singles;
-    if (g.board.tray.length > maxTray) maxTray = g.board.tray.length;
+    singlesSum += s.lonely;
+    if (3 - s.free > maxTray) maxTray = 3 - s.free;
   }
 
   return {
     levels: g.cleared,
     score: g.score,
     taps: g.taps,
-    matches: g.matches,
+    matches: g.completions,
     theta: g.skill.theta,
     meanSingles: g.taps === 0 ? 0 : singlesSum / g.taps,
     maxTray,
@@ -91,8 +91,8 @@ const pct = (xs: number[], p: number): number => {
   return s[Math.min(s.length - 1, Math.floor(p * s.length))];
 };
 
-const RUNS = 50;
-console.log(`LATENT engine bench - ${RUNS} runs per player\n`);
+const RUNS = 300;
+console.log(`SCREWDOM engine bench - ${RUNS} runs per player\n`);
 console.log(
   ['player', 'levels', 'p10', 'p90', 'score', 'taps', 'matches', 'singles', 'maxTray', 'theta', 'ms/tap']
     .map((h) => h.padStart(8))
@@ -158,6 +158,6 @@ console.log(
   `${thetaOrdered ? 'OK  ' : 'FAIL'}  theta ranks players: ` +
     KINDS.map((k) => `${k}=${theta[k].toFixed(3)}`).join(' < '),
 );
-void MATCH;
+void HOLDER_CAPACITY;
 
 if (breaches !== 0 || !weakEnded || !thetaOrdered || !skillPays) process.exitCode = 1;

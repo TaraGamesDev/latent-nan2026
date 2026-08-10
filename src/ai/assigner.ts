@@ -1,42 +1,42 @@
 /**
  * The assigner — this project's AI.
  *
- * It runs once for every tile that becomes visible, and decides what face that
- * tile has. Not which tile to reveal: *what the tile is*. A covered tile has
- * never been observed, so nothing is being hidden or swapped — the level is
- * being written one tile at a time, in front of the player, out of their own
- * situation.
+ * It runs once for every screw that becomes reachable, and decides what colour
+ * that screw is. Not which screw to expose: *what the screw is*. A covered
+ * screw has never been observed, so nothing is being hidden or swapped — the
+ * level is being written one screw at a time, in front of the player, out of
+ * their own situation.
  *
  * Two things are kept strictly apart:
  *
- *   intent      — a soft, heuristic read of the player, which is allowed to be
- *                 wrong, and produces a target difficulty
- *   construction— a hard check that the face about to be committed still leaves
- *                 the pile completable, which is not allowed to be wrong
+ *   intent       — a soft, heuristic read of the player, allowed to be wrong,
+ *                  which produces a target difficulty
+ *   construction — a hard check that the colour about to be committed still
+ *                  leaves the wall clearable, which is not allowed to be wrong
  *
- * The invariant is the whole cost argument. Every face ever assigned must end
- * up in a multiple of three, or the leftovers can never clear. Enforcing that
- * at assignment time means a finished level is winnable *by construction* —
- * there is no solvability check to run afterwards, and that check is precisely
- * what makes hand-authored levels expensive.
+ * The invariant is the whole cost argument. Every colour ever assigned must end
+ * up in a multiple of three, or the leftovers can never complete a holder.
+ * Enforcing that at assignment time makes a finished level winnable *by
+ * construction* — there is no solvability check to run afterwards, and that
+ * check is precisely what makes hand-authored levels expensive.
  */
 
 import {
   type Board,
-  type Face,
-  MATCH,
-  TRAY_SLOTS,
-  type Tile,
+  type Colour,
+  HOLDERS,
+  HOLDER_CAPACITY,
+  type Screw,
   UNDECIDED,
-  faceCounts,
-  isFree,
-} from '../core/tiles';
+  holderFor,
+  isReachable,
+} from '../core/plates';
 import type { Rng } from '../core/rng';
 import { POLICY, type Policy, rampOf } from './policy';
 import { challengeOf, statsOf } from './solver';
 import { clamp01, type MoodState, type SkillState } from './skill';
 
-/** What a candidate face would do for the player's tray. */
+/** What a candidate colour would do for the player's holders. */
 export type Relief = 'complete' | 'pair' | 'echo' | 'fresh';
 
 const RELIEF_VALUE: Record<Relief, number> = {
@@ -46,95 +46,96 @@ const RELIEF_VALUE: Record<Relief, number> = {
   fresh: 0,
 };
 
-const RELIEF_LABEL: Record<Relief, string> = {
-  complete: '즉시 완성',
-  pair: '짝 만들기',
-  echo: '보드와 짝',
-  fresh: '새 무늬',
+export const RELIEF_LABEL: Record<Relief, string> = {
+  complete: '홀더 완성',
+  pair: '홀더 채우기',
+  echo: '벽과 같은 색',
+  fresh: '새 색 (홀더 하나 소모)',
 };
 
 export interface Candidate {
-  face: Face;
+  colour: Colour;
   relief: Relief;
-  /** Tiles that must still be assigned to close every open face, after this. */
+  /** Screws that must still be assigned to close every open colour, after this. */
   debtAfter: number;
-  /** True when the completability invariant survives this choice. */
+  /** True when the clearability invariant survives this choice. */
   feasible: boolean;
-  /** How well this matches what the director wanted. Higher is better. */
   score: number;
 }
 
 export interface RevealDecision {
-  tileId: number;
-  face: Face;
+  screwId: number;
+  colour: Colour;
   relief: Relief;
-  /** Where in the flow channel the director aimed, 0..1. */
+  /** Where in the flow channel the assigner aimed, 0..1. */
   target: number;
-  /** The level's own progress ramp, 0..1. */
+  /** How far through the wall the player is, 0..1. */
   ramp: number;
-  /** How close the tray is to killing the run, 0..1. */
+  /** How close the holders are to ending the run, 0..1. */
   danger: number;
   /** Probability of choosing relief that the above produced. */
   reliefChance: number;
   candidates: Candidate[];
   rejected: number;
-  /** Plain-language reason, surfaced in the panel. */
   rationale: string;
   tags: string[];
 }
 
 /**
- * Running ledger of every face ever committed.
+ * Running ledger of every colour ever committed.
  *
- * Kept separately from the board because tiles leave it — a cleared triple is
- * gone, but it still counts toward that face's total.
+ * Kept separately from the board because screws leave it — a completed holder
+ * is gone, but it still counts toward that colour's total.
  */
 export interface Ledger {
-  assigned: Map<Face, number>;
-  nextFace: Face;
+  assigned: Map<Colour, number>;
+  nextColour: Colour;
 }
 
-export const createLedger = (): Ledger => ({ assigned: new Map(), nextFace: 0 });
+export const createLedger = (): Ledger => ({ assigned: new Map(), nextColour: 0 });
 
-/** Tiles that must still be assigned to bring every open face to a multiple of three. */
+/** Screws that must still be assigned to bring every colour to a multiple of three. */
 export function debtOf(ledger: Ledger): number {
   let debt = 0;
-  for (const n of ledger.assigned.values()) debt += (MATCH - (n % MATCH)) % MATCH;
+  for (const n of ledger.assigned.values()) {
+    debt += (HOLDER_CAPACITY - (n % HOLDER_CAPACITY)) % HOLDER_CAPACITY;
+  }
   return debt;
 }
 
 /**
- * How close the tray is to ending the run.
+ * How close the holders are to ending the run.
  *
- * Not tray length. Six tiles that are three pairs is comfortable; four tiles
- * that are four different faces is nearly fatal, because each single holds a
- * slot until two more of it appear.
+ * Not simply how many are occupied. Two holders each carrying two screws is
+ * comfortable — either one completes on the next matching screw. Two holders
+ * each carrying one is nearly fatal, because both are two screws away and only
+ * one slot is left.
  */
 export function dangerOf(b: Board): number {
   const s = statsOf(b);
-  const fromSingles = s.singles / 4;
-  const fromRoom = Math.max(0, (4 - s.headroom) / 3);
-  return clamp01(Math.max(fromSingles, fromRoom));
+  const fromRoom = Math.max(0, (2 - s.free) / 2);
+  const fromLonely = s.lonely / HOLDERS;
+  return clamp01(Math.max(fromRoom, fromLonely));
 }
 
 /**
- * Decide the face for one newly visible tile.
+ * Decide the colour for one newly reachable screw.
  *
  * Mutates `ledger`. The board is read but not written — the caller commits the
- * face, so the decision record can be shown before anything changes.
+ * colour, so the decision record can be shown before anything changes.
  */
-export function decideFace(
+export function decideColour(
   b: Board,
-  tile: Tile,
+  screw: Screw,
   ledger: Ledger,
   skill: SkillState,
   mood: MoodState,
   rng: Rng,
   policy: Policy = POLICY,
 ): RevealDecision {
-  const total = b.tiles.length;
-  const cleared = total - b.tiles.filter((t) => !t.taken).length;
-  const ramp = rampOf(cleared, total);
+  const total = b.screws.length;
+  const removed = b.screws.filter((s) => s.removed).length;
+  const ramp = rampOf(removed, total);
 
   const comfort = clamp01(
     skill.theta +
@@ -143,86 +144,112 @@ export function decideFace(
       policy.boredomPush * mood.boredom,
   );
   const ramped = clamp01(comfort + (1 - comfort) * policy.rampWeight * ramp);
-  // The opening of a level is capped however good the player looks, so the first
-  // twenty seconds are always readable — but the cap itself rises with the
-  // player. Without that term a strong player got a soft restart every level and
-  // simply never stopped: the bench had the expert bot clearing 28 of them.
   const envelope =
     policy.envelopeBase + policy.envelopeLift * skill.theta + policy.envelopeSlope * ramp;
-  // Until there is evidence, assume nothing and go easy. A player the system has
-  // never seen was dying inside ten taps: theta sits at the 0.5 prior, which is
-  // "average", and average is far too hard for someone still reading the rules.
+  // Until there is evidence, assume nothing and go easy. Theta sits at the 0.5
+  // prior before any observation, and "average" is far too hard for someone
+  // still reading the rules.
   const confidence = skill.samples / (skill.samples + 12);
   const coldStart = policy.coldStartEase + (1 - policy.coldStartEase) * confidence;
   const target = Math.min(ramped, envelope) * coldStart;
 
   const danger = dangerOf(b);
-  const counts = faceCounts(b.tray);
 
-  // Faces sitting on other visible tiles: pairing with one of these lets the
-  // player set up a match without spending a tray slot on a lone face.
-  const onBoard = new Set<Face>();
-  for (const t of b.tiles) {
-    if (t.id !== tile.id && !t.taken && t.face !== UNDECIDED && isFree(b, t)) onBoard.add(t.face);
+  // Colours already on the wall: matching one of these lets the player line up
+  // a set without a holder standing idle in the meantime.
+  const onWall = new Set<Colour>();
+  for (const s of b.screws) {
+    if (s.id !== screw.id && !s.removed && s.colour !== UNDECIDED && isReachable(b, s)) {
+      onWall.add(s.colour);
+    }
   }
 
-  const facePool = Math.round(
-    policy.facePoolBase + (policy.facePoolPeak - policy.facePoolBase) * target,
+  const options: { colour: Colour; relief: Relief }[] = [];
+  for (const h of b.holders) {
+    if (h.colour === UNDECIDED) continue;
+    options.push({
+      colour: h.colour,
+      relief: h.count >= HOLDER_CAPACITY - 1 ? 'complete' : 'pair',
+    });
+  }
+  const holderColours = new Set(b.holders.map((h) => h.colour));
+  for (const c of onWall) {
+    if (!holderColours.has(c)) options.push({ colour: c, relief: 'echo' });
+  }
+
+  const palette = Math.round(
+    policy.paletteBase + (policy.palettePeak - policy.paletteBase) * target,
   );
-
-  const options: { face: Face; relief: Relief }[] = [];
-  for (const [face, n] of counts) {
-    options.push({ face, relief: n >= MATCH - 1 ? 'complete' : 'pair' });
-  }
-  for (const face of onBoard) {
-    if (!counts.has(face)) options.push({ face, relief: 'echo' });
-  }
-  // A fresh face is only offered while the pool has room for another one.
-  const openFaces = new Set([...counts.keys(), ...onBoard]).size;
-  if (openFaces < facePool) options.push({ face: ledger.nextFace, relief: 'fresh' });
-
-  // Nothing to continue and no room for anything new: take the new face anyway
-  // rather than leave the tile undecidable.
-  if (options.length === 0) options.push({ face: ledger.nextFace, relief: 'fresh' });
+  const liveColours = new Set([...holderColours, ...onWall]);
+  liveColours.delete(UNDECIDED);
+  if (liveColours.size < palette) options.push({ colour: ledger.nextColour, relief: 'fresh' });
+  if (options.length === 0) options.push({ colour: ledger.nextColour, relief: 'fresh' });
 
   const baseDebt = debtOf(ledger);
   const undecidedAfter = b.undecided - 1;
 
   const candidates: Candidate[] = options.map((o) => {
-    const n = ledger.assigned.get(o.face) ?? 0;
+    const n = ledger.assigned.get(o.colour) ?? 0;
     // Opening a group adds two to the debt; continuing one removes one.
-    const delta = n % MATCH === 0 ? MATCH - 1 : -1;
+    const delta = n % HOLDER_CAPACITY === 0 ? HOLDER_CAPACITY - 1 : -1;
     const debtAfter = baseDebt + delta;
-    return {
-      face: o.face,
-      relief: o.relief,
-      debtAfter,
-      feasible: undecidedAfter >= debtAfter,
-      score: 0,
-    };
+    return { colour: o.colour, relief: o.relief, debtAfter, feasible: undecidedAfter >= debtAfter, score: 0 };
   });
 
-  // The chance of reaching for relief. Danger overrides the difficulty target:
-  // a tray one tile from death gets helped whatever the dial asked for.
+  /*
+   * How willing the assigner is to hand out an easy colour.
+   *
+   * Danger and target are *multiplied*, not added. Added, they saturate: with no
+   * free holders `danger` pins to 1 and relief becomes certain no matter who is
+   * playing, which is what made the run unloseable. Multiplied, danger sets how
+   * much help is on the table and the target decides how much of it the player
+   * has earned — so a beginner in trouble is rescued and an expert in the same
+   * position is left in it.
+   */
   const reliefChance = clamp01(
-    danger * policy.dangerOverride + (1 - target) * policy.reliefBias,
+    (danger * policy.dangerOverride + policy.reliefBias) * (1 - policy.reliefSkillWeight * target),
   );
 
   const feasible = candidates.filter((c) => c.feasible);
   const pool = feasible.length > 0 ? feasible : candidates;
+  for (const c of pool) c.score = 1 - Math.abs(RELIEF_VALUE[c.relief] - reliefChance);
 
   const complete = pool.filter((c) => c.relief === 'complete');
   const pair = pool.filter((c) => c.relief === 'pair');
   const soft = pool.filter((c) => c.relief === 'echo' || c.relief === 'fresh');
 
-  const headroom = TRAY_SLOTS - b.tray.length;
-  let picked: Candidate;
+  const stats = statsOf(b);
   const tags: string[] = [];
+  let picked: Candidate;
 
-  if (headroom <= policy.gateHard && complete.length > 0) {
-    picked = rng.pick(complete);
-    tags.push('구제');
-  } else if (headroom <= policy.gateSoft && (complete.length > 0 || pair.length > 0)) {
+  // Hard gates. With one holder left and nothing that completes, a fresh colour
+  // is a death sentence handed out by the game rather than earned by the player.
+  /*
+   * The survival floor.
+   *
+   * The only promise worth making is that the player always has *a* move at the
+   * moment the assigner writes. That is much weaker than "you will not lose",
+   * and deliberately so: a wall that is clearable is not a wall this particular
+   * player will clear. If nothing else on the board is playable right now, this
+   * screw has to be playable; otherwise the assigner would be handing out a
+   * defeat the player never made a mistake to earn.
+   *
+   * Everything below it is comfort, and comfort is allowed to run out.
+   */
+  const othersPlayable = b.screws.some(
+    (o) =>
+      o.id !== screw.id &&
+      !o.removed &&
+      o.colour !== UNDECIDED &&
+      isReachable(b, o) &&
+      holderFor(b, o.colour) !== -1,
+  );
+  const homed = pool.filter((c) => c.relief === 'complete' || c.relief === 'pair');
+
+  if (!othersPlayable && homed.length > 0) {
+    picked = rng.pick(complete.length > 0 ? complete : homed);
+    tags.push('생존');
+  } else if (stats.free <= policy.gateSoft && (complete.length > 0 || pair.length > 0)) {
     picked = rng.pick(complete.length > 0 ? complete : pair);
     tags.push('완화');
   } else if (rng() < reliefChance) {
@@ -231,21 +258,16 @@ export function decideFace(
     picked = rng.pick(soft.length > 0 ? soft : pair.length > 0 ? pair : complete);
   }
 
-  for (const c of pool) {
-    c.score = 1 - Math.abs(RELIEF_VALUE[c.relief] - reliefChance);
-  }
-
-  if (picked.face === ledger.nextFace) ledger.nextFace++;
-  ledger.assigned.set(picked.face, (ledger.assigned.get(picked.face) ?? 0) + 1);
+  if (picked.colour === ledger.nextColour) ledger.nextColour++;
+  ledger.assigned.set(picked.colour, (ledger.assigned.get(picked.colour) ?? 0) + 1);
 
   if (danger > 0.6) tags.push('위험');
   if (target > 0.7) tags.push('압박');
   if (ramp > 0.75) tags.push('종반');
-  if (openFaces >= facePool) tags.push(`무늬${openFaces}`);
 
   return {
-    tileId: tile.id,
-    face: picked.face,
+    screwId: screw.id,
+    colour: picked.colour,
     relief: picked.relief,
     target,
     ramp,
@@ -253,7 +275,7 @@ export function decideFace(
     reliefChance,
     candidates: candidates.sort((p, q) => q.score - p.score).slice(0, 5),
     rejected: candidates.length - feasible.length,
-    rationale: explain(skill, mood, target, danger, picked.relief, reliefChance, headroom),
+    rationale: explain(skill, mood, target, danger, picked.relief, reliefChance, stats.free),
     tags,
   };
 }
@@ -265,22 +287,22 @@ function explain(
   danger: number,
   relief: Relief,
   reliefChance: number,
-  headroom: number,
+  free: number,
 ): string {
   const pct = (v: number): string => `${(v * 100) | 0}%`;
   const parts = [`숙련도 ${pct(skill.theta)} → 목표 난이도 ${pct(target)}`];
 
-  if (headroom <= 1) parts.push(`슬롯 ${headroom}칸 — 무조건 완성패를 내려놓습니다`);
-  else if (danger > 0.6) parts.push(`위험 ${pct(danger)} — 난이도와 무관하게 숨통을 틔웁니다`);
+  if (free <= 1) parts.push(`빈 홀더 ${free}칸 — 안전한 색 쪽으로 기웁니다`);
+  else if (danger > 0.6) parts.push(`위험 ${pct(danger)} — 숨통을 틔울지 여부는 숙련도가 정합니다`);
   else if (mood.frustration > 0.55) parts.push(`막힘 감지(${pct(mood.frustration)}) — 짝을 맞춰 줍니다`);
-  else if (mood.boredom > 0.5) parts.push(`여유 감지(${pct(mood.boredom)}) — 새 무늬를 섞습니다`);
+  else if (mood.boredom > 0.5) parts.push(`여유 감지(${pct(mood.boredom)}) — 새 색을 섞습니다`);
   else parts.push('현재 흐름을 유지합니다');
 
   parts.push(`구제 확률 ${pct(reliefChance)} → ${RELIEF_LABEL[relief]}`);
   return parts.join(' · ');
 }
 
-/** Assign faces to every tile that just became visible. */
+/** Assign colours to every screw that just became reachable. */
 export function revealAll(
   b: Board,
   ledger: Ledger,
@@ -291,14 +313,14 @@ export function revealAll(
 ): RevealDecision[] {
   const out: RevealDecision[] = [];
   for (;;) {
-    const next = b.tiles.find((t) => t.face === UNDECIDED && isFree(b, t));
+    const next = b.screws.find((s) => s.colour === UNDECIDED && isReachable(b, s));
     if (!next) break;
-    const decision = decideFace(b, next, ledger, skill, mood, rng, policy);
-    next.face = decision.face;
+    const decision = decideColour(b, next, ledger, skill, mood, rng, policy);
+    next.colour = decision.colour;
     b.undecided--;
     out.push(decision);
   }
   return out;
 }
 
-export { challengeOf, RELIEF_LABEL };
+export { challengeOf };

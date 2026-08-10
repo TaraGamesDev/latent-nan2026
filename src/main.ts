@@ -6,10 +6,10 @@
  */
 
 import './style.css';
-import { TRAY_SLOTS, isFree } from './core/tiles';
-import { rankTakes } from './ai/solver';
+import { HOLDERS, isReachable } from './core/plates';
+import { rankTurns } from './ai/solver';
 import { createGame, dangerOfGame, tap, type GameState } from './game/game';
-import { BoardView } from './ui/render';
+import { WallScene } from './ui/scene';
 import { DirectorPanel } from './ui/panel';
 
 const $ = <T extends HTMLElement>(id: string): T => {
@@ -19,7 +19,7 @@ const $ = <T extends HTMLElement>(id: string): T => {
 };
 
 const canvas = $<HTMLCanvasElement>('board');
-const view = new BoardView(canvas);
+const scene = new WallScene(canvas);
 const panel = new DirectorPanel($('panel-body'));
 
 const els = {
@@ -44,68 +44,71 @@ let game: GameState = createGame();
 let panelOpen = false;
 
 const DEFAULT_HINT =
-  '같은 무늬 3개를 모으면 사라집니다. 회색으로 일렁이는 타일은 <b>아직 무늬가 정해지지 않은</b> 타일입니다.';
+  '나사를 눌러 풀면 같은 색 홀더로 들어갑니다. <b>회색 나사는 아직 색이 정해지지 않은</b> 나사입니다.';
+
+scene.build(game.board);
+scene.resize();
 
 /* ---------------- input ---------------- */
 
-let pressedId: number | null = null;
+canvas.addEventListener('pointermove', (e) => {
+  if (game.over) return;
+  scene.setHovered(scene.pick(game.board, e.clientX, e.clientY));
+});
 
 canvas.addEventListener('pointerdown', (e) => {
   if (game.over) return;
-  const t = view.hitTest(game.board, e.clientX, e.clientY);
-  if (t && !t.taken && t.face >= 0 && isFree(game.board, t)) {
-    pressedId = t.id;
-    view.setPressed(t.id);
+  const id = scene.pick(game.board, e.clientX, e.clientY);
+  if (id !== null) doTap(id);
+  else {
+    const covered = game.board.screws.find(
+      (s) => !s.removed && s.colour < 0 && !isReachable(game.board, s),
+    );
+    if (covered) setHint('회색 나사는 아직 색이 없습니다. 위에 덮인 판을 먼저 떼어내야 정해집니다.');
   }
 });
-
-const release = (): void => {
-  pressedId = null;
-  view.setPressed(null);
-};
-
-canvas.addEventListener('pointerup', (e) => {
-  if (game.over) return;
-  const t = view.hitTest(game.board, e.clientX, e.clientY);
-  const was = pressedId;
-  release();
-  if (t && t.id === was) doTap(t.id);
-  else if (t && t.face < 0) {
-    // Tapping a covered tile is the moment to explain the central idea.
-    setHint('이 타일은 아직 무늬가 없습니다. 위에 덮인 타일을 먼저 치워야 결정됩니다.');
-  }
-});
-
-canvas.addEventListener('pointercancel', release);
-canvas.addEventListener('pointerleave', release);
 
 function doTap(id: number): void {
-  const now = performance.now();
-  const before = game.level;
+  const holderBefore = game.board.holders.map((h) => ({ ...h }));
   const res = tap(game, id, Date.now());
   if (res.kind === 'ignored') return;
 
-  view.addLift(id, now);
-  if (res.matched !== null) {
-    view.addClear(res.matched, now);
-    setHint(game.combo >= 3 ? `${game.combo}연속 완성` : '');
-  } else if (game.board.tray.length >= TRAY_SLOTS - 1) {
-    view.addShake(now);
-    setHint('슬롯이 하나 남았습니다 — 이제 AI가 완성패를 내려놓습니다.', true);
-  } else {
-    setHint('');
+  if (res.gameOver) {
+    scene.sync(game.board);
+    updateHud();
+    showGameOver();
+    return;
   }
 
-  for (const r of res.reveals) view.addResolve(r.tileId, now);
+  // Find where the screw actually landed so the animation flies to that socket.
+  let landed = -1;
+  let socket = 0;
+  for (let i = 0; i < HOLDERS; i++) {
+    const before = holderBefore[i];
+    const after = game.board.holders[i];
+    if (after.count !== before.count || after.colour !== before.colour) {
+      landed = i;
+      socket = res.completed ? 2 : Math.max(0, after.count - 1);
+      break;
+    }
+  }
+  scene.animateUnscrew(id, landed, socket);
+  for (const p of res.fallen) scene.animatePlateFall(p);
+  for (const r of res.reveals) scene.animateReveal(r.screwId, r.colour);
+
+  if (res.completed) setHint(game.combo >= 3 ? `${game.combo}연속 완성` : '');
+  else if (res.fallen.length > 0) setHint(`판 ${res.fallen.length}장이 떨어졌습니다.`);
+  else setHint('');
+
+  scene.sync(game.board);
   if (res.levelCleared) {
-    view.clearEffects();
-    view.layout(game.board);
-    setHint(`레벨 ${before} 클리어 — 다음 판은 조금 더 커집니다.`);
+    scene.build(game.board);
+    scene.resize();
+    setHint('벽 하나 완료 — 다음 벽은 조금 더 두껍습니다.');
   }
 
-  updateHud(res.matched !== null);
+  updateHud(res.completed);
   if (panelOpen) panel.render(game);
-  if (res.gameOver) showGameOver();
 }
 
 /* ---------------- HUD ---------------- */
@@ -131,11 +134,11 @@ function updateHud(pop = false): void {
 /* ---------------- game over ---------------- */
 
 function showGameOver(): void {
-  els.goTitle.textContent = '트레이가 가득 찼습니다';
+  els.goTitle.textContent = '홀더가 가득 찼습니다';
   els.goScore.textContent = game.score.toLocaleString('ko-KR');
   els.goLevels.textContent = String(game.cleared);
   els.goTaps.textContent = String(game.taps);
-  els.goMatches.textContent = String(game.matches);
+  els.goMatches.textContent = String(game.completions);
   els.goRead.textContent = playerRead();
   els.gameover.hidden = false;
 }
@@ -151,27 +154,26 @@ function playerRead(): string {
   const grade = k.theta > 0.75 ? '숙련' : k.theta > 0.55 ? '중급' : k.theta > 0.35 ? '입문' : '첫 판';
   const strong =
     k.foresight >= k.efficiency
-      ? '고를 때마다 뒤를 보는 편입니다'
-      : '트레이를 깨끗하게 유지하는 편입니다';
+      ? '풀 때마다 다음을 보는 편입니다'
+      : '홀더를 오래 비워두지 않는 편입니다';
   const weak =
     k.foresight < 0.5
-      ? '다만 지금 당장 사라지는 쪽을 자주 골랐습니다'
+      ? '다만 눈앞에서 완성되는 쪽을 자주 골랐습니다'
       : k.efficiency < 0.5
-        ? '다만 외톨이 무늬를 오래 들고 있었습니다'
+        ? '다만 반쯤 찬 홀더를 여럿 안고 다녔습니다'
         : '판단이 안정적이었습니다';
   return (
     `${game.taps}번의 탭을 관측한 결과 — ${grade} (θ ${Math.round(k.theta * 100)}%). ` +
     `${strong}. ${weak}. ` +
-    `이 판에서 AI가 즉석에서 결정한 타일은 ${game.revealCount}개입니다.`
+    `이 판에서 AI가 즉석에서 색을 정한 나사는 ${game.revealCount}개입니다.`
   );
 }
 
 els.restart.addEventListener('click', () => {
   game = createGame();
   els.gameover.hidden = true;
-  view.clearEffects();
-  view.setHint([]);
-  view.layout(game.board);
+  scene.build(game.board);
+  scene.resize();
   setHint('');
   updateHud();
   if (panelOpen) panel.render(game);
@@ -184,9 +186,9 @@ function setPanel(open: boolean): void {
   els.panel.hidden = !open;
   els.panelToggle.setAttribute('aria-expanded', String(open));
   document.body.classList.toggle('panel-open', open);
-  requestAnimationFrame(() => view.layout(game.board));
+  requestAnimationFrame(() => scene.resize());
   if (open) panel.render(game);
-  else view.setHint([]);
+  else scene.setHighlight([]);
 }
 
 els.panelToggle.addEventListener('click', () => setPanel(!panelOpen));
@@ -198,53 +200,42 @@ window.addEventListener('keydown', (e) => {
 
 /* ---------------- loop ---------------- */
 
-const ro = new ResizeObserver(() => view.layout(game.board));
+const ro = new ResizeObserver(() => scene.resize());
 ro.observe(canvas);
-window.addEventListener('load', () => view.layout(game.board));
-window.addEventListener('orientationchange', () => setTimeout(() => view.layout(game.board), 120));
+window.addEventListener('load', () => scene.resize());
+window.addEventListener('orientationchange', () => setTimeout(() => scene.resize(), 120));
 
-let warmup = 8;
 let hintAt = 0;
 
 function frame(now: number): void {
-  if (warmup > 0) {
-    warmup--;
-    view.layout(game.board);
-  }
-  // The panel reflows the board, and CSS transitions mean the new size arrives
-  // over several frames rather than on the click.
-  view.layoutIfNeeded(game.board);
-  // While the panel is open, outline the tiles the assigner most recently
-  // wrote — it makes "the AI decided these, just now" legible on the board.
   if (panelOpen && now - hintAt > 200) {
     hintAt = now;
-    view.setHint(game.lastReveals.map((r) => r.tileId));
+    scene.setHighlight(game.lastReveals.map((r) => r.screwId));
     panel.refreshChart(game);
   }
-  view.render(game.board, now);
+  scene.render(now);
   requestAnimationFrame(frame);
 }
 
 /* ---------------- capture mode ---------------- */
 
 /** `?autoplay=N&panel=1` plays N bot taps so documentation screenshots show a
- *  real mid-run board produced by the engine rather than a mock-up. */
+ *  real mid-run wall produced by the engine rather than a mock-up. */
 function capture(): void {
   const params = new URLSearchParams(location.search);
   const n = Number(params.get('autoplay') ?? 0);
   for (let i = 0; i < n && !game.over; i++) {
-    const ranked = rankTakes(game.board);
+    const ranked = rankTurns(game.board);
     if (ranked.length === 0) break;
-    doTap(ranked[Math.min(ranked.length - 1, i % 2)].tile.id);
+    doTap(ranked[Math.min(ranked.length - 1, i % 2)].screw.id);
   }
   if (n > 0) {
-    view.clearEffects();
+    scene.settle();
     setHint('');
   }
   if (params.get('panel') === '1') setPanel(true);
 }
 
-view.layout(game.board);
 updateHud();
 setHint('');
 capture();
