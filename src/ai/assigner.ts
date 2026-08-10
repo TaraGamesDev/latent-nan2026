@@ -149,7 +149,12 @@ export function decideFace(
   // simply never stopped: the bench had the expert bot clearing 28 of them.
   const envelope =
     policy.envelopeBase + policy.envelopeLift * skill.theta + policy.envelopeSlope * ramp;
-  const target = Math.min(ramped, envelope);
+  // Until there is evidence, assume nothing and go easy. A player the system has
+  // never seen was dying inside ten taps: theta sits at the 0.5 prior, which is
+  // "average", and average is far too hard for someone still reading the rules.
+  const confidence = skill.samples / (skill.samples + 12);
+  const coldStart = policy.coldStartEase + (1 - policy.coldStartEase) * confidence;
+  const target = Math.min(ramped, envelope) * coldStart;
 
   const danger = dangerOf(b);
   const counts = faceCounts(b.tray);

@@ -22,6 +22,12 @@ export interface Policy {
   envelopeSlope: number;
   /** How much a strong player raises that ceiling from the first tile. */
   envelopeLift: number;
+  /**
+   * How far the target is held down while the player is still unmeasured.
+   * At zero observations the target is scaled by this; it relaxes to 1 as
+   * evidence accumulates.
+   */
+  coldStartEase: number;
 
   /** How strongly a dangerous tray overrides the difficulty target. */
   dangerOverride: number;
@@ -45,6 +51,7 @@ export const POLICY: Policy = {
   envelopeBase: 0.42,
   envelopeSlope: 0.42,
   envelopeLift: 0.34,
+  coldStartEase: 0.58,
 
   dangerOverride: 1.15,
   reliefBias: 0.55,
