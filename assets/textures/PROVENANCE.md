@@ -18,7 +18,8 @@ was measured off the files on disk on 2026-08-10; nothing here is estimated.
 | Role | `roughnessMap` for the brushed-steel plate materials |
 
 It is the **only** texture in the shipped payload. `public/textures/` contains nothing else.
-(`public/models/*.glb` also sits under `public/` but is a separate deliverable, outside this record.)
+The four `public/models/*.glb` also ship; they are first-party and are covered in §5b so this
+document answers the whole "external assets" question rather than half of it.
 
 PNG is already deflate-compressed, so this is the wire cost: gzipping it produces 55,243 bytes,
 i.e. it does not compress further. For scale, the built bundle in `docs/assets/` is 167,240 B of
@@ -121,9 +122,10 @@ Written and run in this round. It does three things and nothing else — no step
    at runtime (fill 138, 5000 alpha-0.3 streaks at 138 ± 55). That algorithm re-implemented in
    numpy and measured — a simulation, not a browser-canvas decode — gives min 104, max 172,
    mean 138.6, std 10.9. This file is re-levelled to **mean 138.0, std 11.0** so it is a drop-in: three.js
-   multiplies `roughnessMap` by `material.roughness`, so the steel material's authored 0.46 lands
-   on the same effective roughness it does today. Centring the file at a "true" brushed-steel 0.42
-   would silently drop the plates to 0.19 and read as chrome.
+   multiplies `roughnessMap` by `material.roughness`, so whatever scalar the steel material carries
+   lands on the same effective roughness it does today. Centring the file at a "true" brushed-steel
+   0.42 would drop the plates a further 22 % and read as chrome. The level match is what makes the
+   swap safe when the material scalar moves, and it already has — see the note under §4.
 3. **Quantise** to a step of 4 grey levels (13 levels across the band) and write 8-bit greyscale.
 
 Both operations are wrap-safe — a pointwise map cannot create a seam, and the blur is circular —
@@ -138,16 +140,22 @@ so Stage 1's verified seamlessness is *preserved*, not re-established.
 **Roughness band** (the point of a metal roughness map is a narrow band; a 0–255 swing renders as
 tinfoil):
 
-| | 8-bit | as a three.js multiplier on `steel` (`roughness 0.46`) |
+| | 8-bit | as a three.js multiplier on `steel` (`roughness 0.58`) |
 |---|---|---|
-| min | 112 | 0.202 |
-| max | 160 | 0.289 |
-| mean | 138.01 | 0.249 |
-| std | 11.06 | 0.020 |
+| min | 112 | 0.255 |
+| max | 160 | 0.364 |
+| mean | 138.01 | 0.314 |
+| std | 11.06 | 0.025 |
 
 The band spans 48 of 255 levels — a 19 % swing, roughly −2.4 σ … +2.0 σ — entirely inside plausible
 brushed steel. For reference the runtime canvas map it replaces measures min 104 / max 172 /
 mean 138.6 / std 10.9, so the swap is level-neutral by construction and changes only the grain.
+
+> The right-hand column is derived, not authored. `steel.roughness` in `src/ui/scene.ts` was 0.46
+> when this map was built and is **0.58** today (the plate model gained a real rim and groove, so
+> the material was re-tuned; the comment in `scene.ts` explains it). Nothing about the PNG changes
+> — that is the point of level-matching it to the canvas map rather than to an absolute roughness.
+> `steel-roughness.build.py` carries the same scalar as `STEEL_ROUGHNESS`, for reporting only.
 
 **Seamlessness** — measured as the mean pixel step across the wrap against the step between
 ordinary interior neighbours (1.00× means the join is indistinguishable from normal detail):
@@ -172,9 +180,9 @@ Net reduction **784,490 bytes, 93.4 %**.
 | File | Was | Cut because |
 |---|---|---|
 | `steel-normal.png` | 402,515 B | The largest file in the set, and the set as a whole did not pay for itself: rendered under the game's exact lighting at true phone scale (390 × 780 CSS px at DPR 2), the full three-map material differed from the runtime canvas roughness map by RMSE 6.44/255 — 2.5 % of full range. On a brightness-invariant local-contrast measure the ten lines of canvas already deliver ~92 % of the surface break-up the full set achieves. |
-| `steel-basecolor.png` | 130,446 B | In three.js `map` **multiplies** `material.color`. The plates are tinted `0x767f8e`; dropping a 150-grey base map on them darkens the wall ~45 % unless the material colour is also rewritten. It buys a tint problem, not a look. |
+| `steel-basecolor.png` | 130,446 B | In three.js `map` **multiplies** `material.color`. The plates are tinted (`0x6f7887` today); dropping a 150-grey base map on them darkens the wall ~45 % unless the material colour is also rewritten. It buys a tint problem, not a look. |
 | `anodised-detail.png` | 136,157 B | A screw-head detail map. Genuinely nice at macro range, but the screws are small on a phone, and it needs a compensating `color.multiplyScalar(1/0.7369)` on every one of the 8 anodised materials to avoid desaturating the colour that **is** the game mechanic. Not worth the risk or the bytes. Exactly reproducible from `anodised-detail.build.py` + `anodised-detail.chips.npz` if that decision is ever revisited. |
-| `steel-roughness.png` | 170,557 B → 55,185 B | Kept. Roughness is the one map that earns its place: at metalness 0.86 under a dim IBL (`environmentIntensity 0.34`) there is almost no diffuse response, so essentially all visible shading is the blurred environment reflection — and breaking that up is precisely what a roughness map does. |
+| `steel-roughness.png` | 170,557 B → 55,185 B | Kept. Roughness is the one map that earns its place: at metalness 0.82 under a dim IBL (`environmentIntensity 0.34`, `toneMappingExposure 0.78`) there is only ~18 % diffuse response, so nearly all visible shading is the blurred environment reflection — and breaking that up is precisely what a roughness map does. |
 
 A competing brushed-steel set generated from **Flux.2 Dev** (template `image_flux2_text_to_image`,
 seed 880417) was evaluated and **not used**: it was made tileable by mirror cross-fade, which leaves
@@ -186,6 +194,34 @@ The same Flux.2 Dev template (seed 71042) produced `anodised-detail.comfy-source
 used only as a *shape library* — 66 chip silhouettes harvested by high-pass + threshold +
 connected-component labelling — and never as pixels. That lineage is recorded in
 `anodised-detail.build.py`.
+
+---
+
+## 5b. The other shipped binaries — the four models
+
+Listed here because a submission's external-asset section has to account for **every** binary that
+ships, and these are the rest of them. They are **not** external: no model was downloaded, bought,
+scraped or generated by an image/3D model. Each is the output of a committed, deterministic Blender
+script in `assets/blender/`, run headless against Blender 5.2.0 LTS; the exporter is
+`Khronos glTF Blender I/O v5.2.39`.
+
+| Model | Script | Bytes | gzip −9 | Triangles | glTF materials |
+|---|---|---:|---:|---:|---|
+| `public/models/screw.glb` | `assets/blender/screw.py` | 82,400 | 33,049 | 2,908 | `ScrewHead`, `ScrewMetal` |
+| `public/models/plate.glb` | `assets/blender/plate.py` | 54,916 | 19,616 | 1,788 | `PlateSteel` |
+| `public/models/hole.glb` | `assets/blender/hole.py` | 34,548 | 14,452 | 1,344 | `HoleMetal` |
+| `public/models/holder.glb` | `assets/blender/holder.py` | 52,972 | 18,979 | 1,898 | `HolderBody`, `HolderWell` |
+| **Total** | | **224,836** | **86,096** | **7,938** | 6 materials |
+
+Every model carries `POSITION` + `NORMAL`; `plate.glb` alone also carries `TEXCOORD_0`, because it
+is the only surface the texture above is bound to. No GLB embeds an image, and none uses a glTF
+extension (`extensionsUsed` is empty in all four). Each script asserts its own triangle count,
+per-primitive bounding box and a 4,000-triangle budget, and each rebuild was verified byte-identical
+across repeated runs, so the binaries can be regenerated and diffed rather than trusted.
+
+**Whole shipped asset payload: 280,021 bytes raw, 141,339 bytes gzipped** (four models + one
+texture). Against the built bundle (`docs/assets`, 167,290 B JS + 2,513 B CSS gzipped) the assets
+are 45 % of gzipped transfer.
 
 ---
 
@@ -225,8 +261,14 @@ re-run:
 
 ## 부록 — 제출용 요약 (외부 에셋 / 오픈소스 출처)
 
-- **배포에 포함된 외부 에셋: 이미지 1개.** `public/textures/steel-roughness.png` (512×512, 8비트
-  그레이스케일 단일 채널 PNG, 55,185바이트). 3D 모델·폰트·사운드·스톡 이미지는 사용하지 않았습니다.
+- **외부에서 가져온 에셋은 없습니다.** 배포에 포함된 바이너리는 이미지 1개와 3D 모델 4개뿐이며,
+  모두 이 저장소에서 직접 만들었습니다. 폰트·사운드·스톡 이미지·구매 또는 다운로드한 3D 모델은
+  사용하지 않았습니다.
+- **이미지 1개:** `public/textures/steel-roughness.png` (512×512, 8비트 그레이스케일 단일 채널
+  PNG, 55,185바이트).
+- **3D 모델 4개:** `public/models/{screw,plate,hole,holder}.glb` (합계 224,836바이트, 7,938
+  삼각형). 각각 `assets/blender/*.py`의 Blender 스크립트로 생성되며, 재실행 시 동일 바이트가
+  재생성되는 것을 확인했습니다. 외부 모델을 내려받거나 구매하지 않았습니다.
 - **생성 경로:** Comfy Cloud에서 오픈 웨이트 모델 **Z-Image-Turbo(int8)** + **Qwen3-4B** 텍스트
   인코더로 생성(템플릿 `image_z_image_turbo_int8`, 1024×1024, 8스텝, cfg 1.0, 시드 771144,
   네거티브 프롬프트 없음). 프롬프트 전문과 `prompt_id`는 위 2절에 기록되어 있습니다. 유료 상용
@@ -238,4 +280,5 @@ re-run:
   거칠기 값 범위 112–160(평균 138.0)의 좁은 금속 대역.
 - **삭제한 에셋:** 노멀맵·베이스컬러·나사머리 디테일맵 3종(총 669,118바이트)을 배포에서 제외.
   이미지 에셋 총량을 839,675바이트에서 55,185바이트로 **93.4 % 감축**했습니다.
+- **배포 에셋 총량:** 원본 280,021바이트 / gzip 141,339바이트 (모델 4개 + 텍스처 1개).
 - **런타임 오픈소스:** three.js (MIT).

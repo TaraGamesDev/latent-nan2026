@@ -22,13 +22,18 @@ either removes bytes or re-levels the signal.
    algorithm re-implemented in numpy and measured: min 104, max 172, mean 138.6,
    std 10.9 (a simulation, not a browser-canvas decode). This file is re-levelled to mean 138.0,
    std 11.0 so it is a DROP-IN: three.js multiplies roughnessMap by
-   material.roughness, and the steel material's authored 0.46 keeps landing on
-   the same effective roughness it does today (~0.25). Only the grain changes —
-   from 1-D scanlines to real 2-D brushed structure.
+   material.roughness, so whatever scalar the steel material carries keeps
+   landing where it does today. Only the grain changes — from 1-D scanlines to
+   real 2-D brushed structure.
 
    This is why the map is centred at 0.541 and not at some "true" roughness: it
    is a MULTIPLIER in three.js, not an absolute value. Centring it at a literal
-   brushed-steel 0.42 would silently drop the plates to 0.19 and read as chrome.
+   brushed-steel 0.42 would drop the plates by a further 22% and read as chrome.
+
+   The report at the bottom converts the band into effective roughness using
+   STEEL_ROUGHNESS below. That scalar lives in scene.ts and has already moved
+   once (0.46 -> 0.58); it is a display figure only and cannot affect the output
+   bytes, but keep it in step or the printed numbers quietly go stale.
 
 3. QUANTISE. Round to a step of 4 grey levels — 13 levels across the band. The
    band is only ~+-2.2 sigma wide to begin with, so a step of 4 is ~0.016 of
@@ -53,6 +58,9 @@ TARGET_MEAN = 138.0
 TARGET_STD = 11.0
 STEP = 4        # quantisation step in 8-bit grey levels
 BUDGET = 60 * 1024
+# Reporting only — never touches the pixels. Mirrors `steel.roughness` in
+# src/ui/scene.ts, which is the scalar this map multiplies.
+STEEL_ROUGHNESS = 0.58
 
 
 def wrap_blur_x(a, r):
@@ -90,9 +98,11 @@ print('shipped     : %s %dx%d  %d bytes (%.1f KB)  %s budget by %.1f KB'
          'UNDER' if size < BUDGET else 'OVER', abs(BUDGET - size) / 1024))
 print('levels      : %d distinct, step %d' % (len(np.unique(q)), STEP))
 print('8-bit range : min %d max %d mean %.2f std %.2f' % (q.min(), q.max(), q.mean(), q.std()))
-print('as roughness multiplier on material.roughness 0.46 (src/ui/scene.ts steel):')
+print('as roughness multiplier on material.roughness %.2f (src/ui/scene.ts steel):'
+      % STEEL_ROUGHNESS)
 print('              %.3f .. %.3f, mean %.3f'
-      % (q.min() / 255 * 0.46, q.max() / 255 * 0.46, q.mean() / 255 * 0.46))
+      % (q.min() / 255 * STEEL_ROUGHNESS, q.max() / 255 * STEEL_ROUGHNESS,
+         q.mean() / 255 * STEEL_ROUGHNESS))
 print('seam        : x wrap %.3f vs interior %.3f (%.2fx)   y wrap %.3f vs interior %.3f (%.2fx)'
       % (wrap_x, int_x, wrap_x / int_x, wrap_y, int_y, wrap_y / int_y))
 
