@@ -60,6 +60,9 @@ export interface Candidate {
   debtAfter: number;
   /** True when the clearability invariant survives this choice. */
   feasible: boolean;
+  /** True when this colour would put more colours in front of the player than
+   *  the holders can hold. Yields to `feasible`. */
+  crowds: boolean;
   score: number;
 }
 
@@ -188,12 +191,43 @@ export function decideColour(
   const baseDebt = debtOf(ledger);
   const undecidedAfter = b.undecided - 1;
 
+  /*
+   * Second construction constraint: never put more distinct colours in front of
+   * the player at once than there are holders.
+   *
+   * Four reachable screws in four colours against three holders is not hard, it
+   * is impossible — whichever three the player commits to, the fourth has
+   * nowhere to go and its plate can never come off. A run ended in three taps
+   * this way, which is not a difficulty setting, it is a broken position. Like
+   * the completability inequality, this is checked rather than aimed for.
+   */
+  const liveOnWall = new Set<Colour>();
+  let liveCount = 1; // this screw
+  for (const o of b.screws) {
+    if (o.id !== screw.id && !o.removed && o.colour !== UNDECIDED && isReachable(b, o)) {
+      liveOnWall.add(o.colour);
+      liveCount++;
+    }
+  }
+  // Room to breathe once there are duplicates to build triples from; strict when
+  // the board is down to a handful of screws, which is where a colour with no
+  // home is fatal rather than merely awkward.
+  const maxSpread = liveCount <= HOLDERS + 1 ? HOLDERS : HOLDERS + 1;
+
   const candidates: Candidate[] = options.map((o) => {
     const n = ledger.assigned.get(o.colour) ?? 0;
     // Opening a group adds two to the debt; continuing one removes one.
     const delta = n % HOLDER_CAPACITY === 0 ? HOLDER_CAPACITY - 1 : -1;
     const debtAfter = baseDebt + delta;
-    return { colour: o.colour, relief: o.relief, debtAfter, feasible: undecidedAfter >= debtAfter, score: 0 };
+    const spread = liveOnWall.has(o.colour) ? liveOnWall.size : liveOnWall.size + 1;
+    return {
+      colour: o.colour,
+      relief: o.relief,
+      debtAfter,
+      feasible: undecidedAfter >= debtAfter,
+      crowds: spread > maxSpread,
+      score: 0,
+    };
   });
 
   /*
@@ -210,8 +244,17 @@ export function decideColour(
     (danger * policy.dangerOverride + policy.reliefBias) * (1 - policy.reliefSkillWeight * target),
   );
 
+  /*
+   * The two constraints are not equals, and treating them as equals broke the
+   * one that matters — with a single combined filter, a turn where nothing
+   * satisfied both fell through to a candidate that violated completability,
+   * three hundred times in a bench run. Completability is the promise; the
+   * colour-spread cap is a construction rule that yields to it.
+   */
   const feasible = candidates.filter((c) => c.feasible);
-  const pool = feasible.length > 0 ? feasible : candidates;
+  const clearable = feasible.length > 0 ? feasible : candidates;
+  const roomy = clearable.filter((c) => !c.crowds);
+  const pool = roomy.length > 0 ? roomy : clearable;
   for (const c of pool) c.score = 1 - Math.abs(RELIEF_VALUE[c.relief] - reliefChance);
 
   const complete = pool.filter((c) => c.relief === 'complete');

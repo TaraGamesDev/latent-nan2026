@@ -21,7 +21,7 @@ import { statsOf } from '../ai/solver';
 import { createGame, tap } from '../game/game';
 
 const KINDS: PersonaName[] = ['novice', 'casual', 'expert'];
-const STEP_CAP = 3000;
+const STEP_CAP = 12000;
 
 interface RunResult {
   levels: number;

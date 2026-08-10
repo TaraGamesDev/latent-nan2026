@@ -157,6 +157,18 @@
         “해체 가능한 벽”과 “이 플레이어가 해체할 벽”은 다른 말이고, 후자를 약속하는 순간
         게임이 사라지기 때문입니다.
       </p>
+      <p>
+        그리고 <strong>색 폭 상한</strong> — 손이 닿는 나사가 몇 개 안 될 때는 그 안의 서로
+        다른 색이 홀더 수를 넘지 않아야 합니다. 배포된 빌드를 실제로 플레이하다
+        <strong>3탭 만에 패배</strong>했고, 원인은 맨 위 판의 나사 네 개가 전부 다른 색이었던
+        것입니다. 홀더 셋 중 어느 셋을 잡아도 네 번째는 갈 곳이 없고, 그 판은 영원히 떨어지지
+        않습니다. 어려운 자리가 아니라 <em>불가능한 자리</em>였습니다.
+      </p>
+      <p>
+        <strong>두 제약은 동등하지 않습니다.</strong> 처음엔 하나의 필터에 함께 넣었더니,
+        둘 다 만족하는 후보가 없는 턴에서 폴백이 완결성 쪽을 어겼습니다 — 벤치 한 번에
+        301회. 완결성이 약속이고 색 폭 상한은 그 아래에서 양보하는 구성 규칙입니다.
+      </p>
     </div>
     <p>
       <strong>다만 질 수는 있습니다. 그래야 맞습니다.</strong> 홀더가 3칸이므로 살아 있는
@@ -264,21 +276,23 @@
         <tr><th>페르소나</th><th class="num">해체한 벽</th><th class="num">점수</th><th class="num">탭</th><th class="num">완성</th><th class="num">외톨이 홀더</th><th class="num">θ</th><th class="num">탭당 ms</th></tr>
       </thead>
       <tbody>
-        <tr><td>novice</td><td class="num">9.98</td><td class="num">19,022</td><td class="num">334</td><td class="num">110.1</td><td class="num">1.16</td><td class="num">0.548</td><td class="num">0.012</td></tr>
-        <tr><td>casual</td><td class="num">10.86</td><td class="num">20,766</td><td class="num">365</td><td class="num">120.3</td><td class="num">0.93</td><td class="num">0.693</td><td class="num">0.011</td></tr>
-        <tr><td>expert</td><td class="num">10.64</td><td class="num">19,572</td><td class="num">356</td><td class="num">117.6</td><td class="num">0.64</td><td class="num">0.821</td><td class="num">0.011</td></tr>
+        <tr><td>novice</td><td class="num">17.10</td><td class="num">43,959</td><td class="num">594</td><td class="num">196.5</td><td class="num">1.16</td><td class="num">0.543</td><td class="num">0.018</td></tr>
+        <tr><td>casual</td><td class="num">21.60</td><td class="num">66,410</td><td class="num">757</td><td class="num">250.9</td><td class="num">0.90</td><td class="num">0.695</td><td class="num">0.015</td></tr>
+        <tr><td>expert</td><td class="num">18.47</td><td class="num">47,063</td><td class="num">643</td><td class="num">212.9</td><td class="num">0.62</td><td class="num">0.835</td><td class="num">0.026</td></tr>
       </tbody>
     </table>
     <ul>
       <li><strong>OK</strong> — 완결성 불변식이 모든 런의 모든 탭에서 유지됨</li>
-      <li><strong>OK</strong> — novice와 casual은 900런 전부 패배로 끝남 (홀더가 실제로 물어야 함)</li>
-      <li><strong>OK</strong> — 실력이 보상됨: novice 9.98 &lt; expert 10.64</li>
-      <li><strong>OK</strong> — θ가 페르소나를 마땅한 순서로 정렬: 0.548 &lt; 0.693 &lt; 0.821</li>
+      <li><strong>OK</strong> — 900런이 <strong>전부</strong> 패배로 끝남. 탭 상한(12,000)에 걸린 런은 0개이므로 상한 인공물이 아닙니다</li>
+      <li><strong>OK</strong> — 실력이 보상됨: novice 17.10 &lt; expert 18.47</li>
+      <li><strong>OK</strong> — θ가 페르소나를 마땅한 순서로 정렬: 0.543 &lt; 0.695 &lt; 0.835</li>
     </ul>
     <p>
-      <strong>격차가 좁습니다. 좁아야 맞고, 동시에 이것이 이 규칙의 한계입니다.</strong>
-      난이도 적응의 목적은 결과의 <em>분산을 좁히는 것</em>이지 순서를 뒤집는 것이 아닙니다.
-      다만 얼마나 좁힐 수 있는지에는 예산이 있고, 그 예산을 재는 도구가 7.2입니다.
+      <strong>양 끝은 순서대로지만 casual이 가장 높습니다(21.60).</strong> 숨기지 않고 적습니다 —
+      실력 마진이 7%인 규칙에 난이도 적응을 걸면 이렇게 됩니다. 적응의 목적은 결과의
+      <em>분산을 좁히는 것</em>이지 순서를 뒤집는 것이 아니고, 지금은 뒤집히지 않는 선까지만
+      와 있습니다. 근본 해법은 적응을 더 줄이는 것이 아니라 <strong>마진 자체를 넓히는
+      것</strong>이며, 그 예산을 재는 도구가 7.2입니다.
     </p>
 
     <h3>7.1 계측이 잡아낸 것들 — 이번 규칙에서</h3>
