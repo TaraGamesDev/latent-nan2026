@@ -8,6 +8,14 @@ tune-output/
 # 3D asset pipeline: the Blender scripts and the four preview renders are the
 # record; the intermediate renders, sweeps and source generations are not.
 assets/blender/_probe_*.py
-assets/textures/
 assets/models/*.glb
 assets/scratch/
+
+# Texture working record: the source generations, intermediates and evidence
+# renders stay out, but the provenance document and the build script that
+# produces the one shipped texture are part of the submission and must ship.
+# NOTE: this must be `assets/textures/*`, not `assets/textures/` — git does not
+# descend into an excluded directory, so a negation inside one has no effect.
+assets/textures/*
+!assets/textures/PROVENANCE.md
+!assets/textures/steel-roughness.build.py

@@ -34,15 +34,21 @@ moulded appliance lid.  Two rules keep it hard-surface:
 MATERIAL — exactly one, "PlateSteel", and it is NOT chosen in isolation.
   This GLB replaces the procedural rounded box that src/ui/scene.ts builds with
   `this.steel`, so it has to match that material or the swap is visible:
-      steel = color 0x767f8e, metalness 0.86, roughness 0.46
+      steel = color 0x6f7887, metalness 0.82, roughness 0.58
   The v1 build shipped metallic 1.0 with no explicit metallicFactor at all (glTF
   defaults it to 1.0) on the theory that "a half-metal renders chalky".  That is
   true in a bright studio HDRI and false here: scene.ts runs
   environmentIntensity = 0.34 and toneMappingExposure = 0.78, and at metalness
   1.0 a Principled/Standard surface has NO diffuse term whatsoever — every photon
   it shows comes from that dimmed environment plus two directional lights.  The
-  result is a plate markedly darker and flatter than the box it replaces.  0.86
-  keeps 14% diffuse, which is what carries the value in a dim room.
+  result is a plate markedly darker and flatter than the box it replaces.  0.82
+  keeps 18% diffuse, which is what carries the value in a dim room.
+
+  scene.ts currently OVERRIDES this slot at load (replaceMaterial(assets.plate,
+  'PlateSteel', this.steel)), so these factors are not what renders today.  They
+  still have to be right: the override is one line and the palette comment says
+  the models "ship with their own materials", so the file must not be the thing
+  that lies when it is read on its own, in a viewer, or after that line moves.
 
   Base colour is written to glTF as baseColorFactor, which is LINEAR, so the
   sRGB hex from scene.ts is converted through srgb() below rather than pasted in.
@@ -61,8 +67,20 @@ largest thing on screen and carries a tiling brushed-steel roughness map.
       (dx, dy), translate that vertex's uv by (dx * K, dy * K), K = UV_PER_UNIT.
 
   so texel density stays at a constant real-world scale at every plate size.
+  src/ui/assets.ts nineSlice() already honours this: it rewrites the whole uv
+  attribute from the TRANSLATED positions over STEEL_TILE, which is the same
+  mapping.  K here is therefore pinned to 1 / STEEL_TILE — see UV_PER_UNIT.
   (Blender's exporter flips V — it writes v_gltf = 1 - v_blender — so V is
   pre-flipped below and the GLB really does contain uv = pos * K.)
+
+  One honest limitation: a single planar projection sees the vertical rim band
+  at r = 1.000 exactly edge-on, so those faces (~8.7% of the surface) get
+  zero-area UVs.  The front face, the border land, the groove floor and the back
+  — everything actually in the plate's plane, ~67% of the surface — come out at
+  exactly K, and the chamfers foreshorten by cos(tilt) as any planar projection
+  must.  Unrolling the rim would need a separate developed unwrap and would break
+  the uv = pos * K identity the nine-slice depends on; the rim is the dark side
+  wall of a plate that is 15x wider than it is thick, so it is not worth that.
 """
 import bpy, bmesh, math, os, struct, json
 from mathutils import Vector
@@ -84,14 +102,22 @@ BEVEL_SEG = 3          # 3 segments rolls the highlight instead of stair-steppin
 SHARP_DEG = 30.0
 
 # ---------------------------------------------------------------- UV scale
-# UV units per world unit.  2.0 => one texture tile spans 0.5 world units, so the
-# 2.0-wide authored plate shows 4 tiles across.  Picked to land on the crisp end
-# of what the procedural version already produced: scene.ts sets repeat (3,3) on
-# a per-face 0-1 box unwrap of a plate that is p.w * 1.55 - 0.1 wide, i.e. a tile
-# of 0.483 world units for a 1x1 plate but 1.0 for a 2x1 one — the density drifts
-# with plate size, which is exactly the bug a world-scaled UV removes.
-UV_PER_UNIT   = 2.0                  # K
-UV_TILE_WORLD = 1.0 / UV_PER_UNIT    # 0.5 world units per tile
+# NOT a free choice.  src/ui/assets.ts already ships the constant:
+#
+#     export const STEEL_TILE = 1.6;      // world units covered by one repeat
+#     uv[i*2]     = pos.getX(i) / STEEL_TILE;
+#     uv[i*2 + 1] = pos.getY(i) / STEEL_TILE;
+#
+# nineSlice() recomputes the UVs from the TRANSLATED positions with that divisor,
+# which is the runtime half of the contract below.  Baking a different K here
+# would make the loaded template and every nine-sliced instance disagree on grain
+# size by the ratio of the two constants, and the mismatch only shows up once
+# something renders the template without going through nineSlice.  So: same
+# number, derived from the same name.
+UV_TILE_WORLD = 1.6                  # == assets.ts STEEL_TILE
+UV_PER_UNIT   = 1.0 / UV_TILE_WORLD  # K = 0.625 uv per world unit
+# The roughness map is bound with wrapS/wrapT = RepeatWrapping and NO repeat
+# factor, so the tiling comes entirely from UV values running past 1.
 
 
 def srgb(hexcolour):
@@ -255,12 +281,16 @@ def verify_nine_slice(cos):
 
 # ---------------------------------------------------------------- build
 reset_scene()
-# src/ui/scene.ts:172  this.steel = color 0x767f8e, metalness 0.86, roughness 0.46
-# Matched exactly. Not "a nice steel" — THE steel this mesh is dropped in to
-# replace, under environmentIntensity 0.34 / exposure 0.78.
-MAT = new_material("PlateSteel", srgb(0x767F8E), 0.86, 0.46)
-print("  PlateSteel baseColor linear=%s (from sRGB #767F8E) metallic=%.2f rough=%.2f"
-      % (tuple(round(c, 5) for c in srgb(0x767F8E)), 0.86, 0.46))
+# src/ui/scene.ts  this.steel = color 0x6f7887, metalness 0.82, roughness 0.58
+# (+ roughnessMap assets.steelRoughness).  Read out of the file, not from a brief:
+# scene.ts has since been retuned off 0x767f8e / 0.86 / 0.46 — "rougher than the
+# earlier procedural plate ... a mirror finish blew the top half out" — and the
+# GLB has to follow the file, not the note.
+PLATE_HEX, PLATE_METALLIC, PLATE_ROUGHNESS = 0x6F7887, 0.82, 0.58
+MAT = new_material("PlateSteel", srgb(PLATE_HEX), PLATE_METALLIC, PLATE_ROUGHNESS)
+print("  PlateSteel baseColor linear=%s (from sRGB #%06X) metallic=%.2f rough=%.2f"
+      % (tuple(round(c, 5) for c in srgb(PLATE_HEX)), PLATE_HEX,
+         PLATE_METALLIC, PLATE_ROUGHNESS))
 
 print("profile break angles (threshold %.0f deg):" % SHARP_DEG)
 for i, r, z, d, tag in profile_dihedrals():
@@ -393,10 +423,10 @@ for m in js["materials"]:
     # and metallic 1.0 kills the diffuse term this dim scene depends on.
     assert "metallicFactor" in pbr, "metallicFactor must be explicit, not defaulted"
     assert "roughnessFactor" in pbr, "roughnessFactor must be explicit"
-    assert abs(pbr["metallicFactor"] - 0.86) < 1e-4, "PlateSteel metallic != 0.86"
-    assert abs(pbr["roughnessFactor"] - 0.46) < 1e-4, "PlateSteel roughness != 0.46"
-    for got, want in zip(pbr["baseColorFactor"], srgb(0x767F8E) + (1.0,)):
-        assert abs(got - want) < 2e-3, "PlateSteel baseColorFactor != linear #767F8E"
+    assert abs(pbr["metallicFactor"] - PLATE_METALLIC) < 1e-4, "PlateSteel metallic"
+    assert abs(pbr["roughnessFactor"] - PLATE_ROUGHNESS) < 1e-4, "PlateSteel roughness"
+    for got, want in zip(pbr["baseColorFactor"], srgb(PLATE_HEX) + (1.0,)):
+        assert abs(got - want) < 2e-3, "PlateSteel baseColorFactor != scene.ts steel"
 
 glb_tris = 0
 for p in js["meshes"][0]["primitives"]:
