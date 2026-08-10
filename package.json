@@ -1,0 +1,20 @@
+{
+  "name": "cadence",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "CADENCE - a block puzzle whose every moment is designed by an AI director",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tune": "tsx src/tools/tune.ts",
+    "bench": "tsx src/tools/bench.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5"
+  }
+}
