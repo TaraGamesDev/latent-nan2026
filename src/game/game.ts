@@ -172,7 +172,12 @@ export function tap(s: GameState, screwId: number, now = Date.now()): TapResult 
 
   s.platesDropped += result.fallen.length;
 
-  let points = 0;
+  // A small award for the screw itself. Completions and falling plates are where
+  // the real points are, but without this the counter sits at zero for the first
+  // few taps and the game reads as unresponsive to someone trying it for twenty
+  // seconds.
+  let points = 4;
+  s.score += 4;
   let kind: TapResult['kind'] = 'turn';
   if (result.completed) {
     kind = 'complete';
