@@ -235,6 +235,10 @@ figure {
 
 figure img {
   width: 100%;
+  /* Capped so a tall portrait capture cannot push its own caption onto the
+     next page — the caption is doing as much work as the picture. */
+  max-height: 460px;
+  object-fit: contain;
   border: 1px solid #d8dce6;
   border-radius: 5px;
   display: block;

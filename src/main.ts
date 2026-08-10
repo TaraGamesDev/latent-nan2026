@@ -229,7 +229,10 @@ function capture(): void {
     if (ranked.length === 0) break;
     doTap(ranked[Math.min(ranked.length - 1, i % 2)].screw.id);
   }
-  if (n > 0) setHint('');
+  if (n > 0) {
+    scene.settle();
+    setHint('');
+  }
   if (params.get('panel') === '1') setPanel(true);
 }
 

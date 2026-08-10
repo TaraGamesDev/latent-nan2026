@@ -8,8 +8,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "tune": "tsx src/tools/tune.ts",
-    "bench": "tsx src/tools/bench.ts"
+    "bench": "tsx src/tools/bench.ts",
+    "margin": "tsx src/tools/margin.ts"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

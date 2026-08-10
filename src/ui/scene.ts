@@ -127,6 +127,7 @@ export class WallScene {
 
   private spanX = 6;
   private spanY = 6;
+  private wallH = 6;
   private centreY = 0;
 
   constructor(private canvas: HTMLCanvasElement) {
@@ -277,10 +278,10 @@ export class WallScene {
     }
 
     this.spanX = maxX * S;
-    this.spanY = maxY * S + HOLD_DROP + 1.6;
-    this.centreY = -(HOLD_DROP + 1.6) / 2 + 0.4;
+    this.wallH = maxY * S;
+    this.spanY = this.wallH + HOLD_DROP + 1.6;
 
-    this.buildHolders(maxY * S);
+    this.buildHolders(this.wallH);
     this.sync(board);
     this.resize();
   }
@@ -551,10 +552,23 @@ export class WallScene {
 
     // Fit the wall and the holders together, whatever the viewport shape.
     const vFov = MathUtils.degToRad(this.camera.fov);
-    const distV = this.spanY / 2 / Math.tan(vFov / 2);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * this.camera.aspect);
+    const distV = this.spanY / 2 / Math.tan(vFov / 2);
     const distH = this.spanX / 2 / Math.tan(hFov / 2);
     const dist = Math.max(distV, distH) * 1.06 + 0.9;
+
+    // On a tall screen the fit is bound by width, so there is vertical room
+    // going spare. Zooming in would crop the wall; pushing the holders further
+    // down spends the room on something useful instead, and keeps them near the
+    // thumb rather than floating in the middle of the display.
+    const visibleH = 2 * dist * Math.tan(vFov / 2);
+    const spare = Math.max(0, visibleH * 0.88 - this.spanY);
+    const drop = Math.min(spare, this.wallH * 0.55);
+    this.holderGroup.position.y = -drop;
+
+    const top = this.wallH / 2;
+    const bottom = -this.wallH / 2 - HOLD_DROP - drop - 0.7;
+    this.centreY = (top + bottom) / 2;
 
     this.camera.position.set(0, this.centreY, dist);
     this.camera.lookAt(0, this.centreY, 0);
@@ -584,5 +598,15 @@ export class WallScene {
 
   get busy(): boolean {
     return this.tweens.length > 0;
+  }
+
+  /** Snap every animation to its end state. Used by the screenshot mode, where a
+   *  plate caught mid-fall makes a confusing still. */
+  settle(): void {
+    for (const t of this.tweens) {
+      t.update(1);
+      t.done?.();
+    }
+    this.tweens.length = 0;
   }
 }
