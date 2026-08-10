@@ -1,0 +1,280 @@
+/* Shared print styling for the two submission PDFs.
+   Rendered through headless Chrome, so system Korean fonts are available and
+   nothing has to be embedded or subset by hand. */
+
+@page {
+  size: A4;
+  margin: 18mm 16mm 16mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+body {
+  margin: 0;
+  font-family: 'Apple SD Gothic Neo', 'Pretendard', -apple-system, sans-serif;
+  font-size: 10.2pt;
+  line-height: 1.65;
+  color: #16181d;
+}
+
+code,
+pre,
+.mono {
+  font-family: 'SF Mono', 'JetBrains Mono', Menlo, monospace;
+  font-size: 8.8pt;
+}
+
+/* ---- cover ---- */
+
+.cover {
+  border-bottom: 2.5px solid #0f1116;
+  padding-bottom: 12px;
+  margin-bottom: 20px;
+}
+
+.eyebrow {
+  font-size: 8pt;
+  letter-spacing: 0.22em;
+  font-weight: 800;
+  color: #5b6478;
+  text-transform: uppercase;
+  margin: 0 0 8px;
+}
+
+h1 {
+  font-size: 22pt;
+  font-weight: 800;
+  margin: 0 0 4px;
+  letter-spacing: -0.01em;
+}
+
+.tagline {
+  font-size: 12pt;
+  font-weight: 600;
+  color: #2f3542;
+  margin: 0 0 12px;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 22px;
+  font-size: 8.6pt;
+  color: #5b6478;
+}
+
+.meta b {
+  color: #16181d;
+  font-weight: 700;
+}
+
+/* ---- structure ---- */
+
+h2 {
+  font-size: 13pt;
+  font-weight: 800;
+  margin: 22px 0 8px;
+  padding-bottom: 5px;
+  border-bottom: 1.5px solid #d8dce6;
+  break-after: avoid;
+}
+
+h3 {
+  font-size: 10.8pt;
+  font-weight: 700;
+  margin: 15px 0 5px;
+  break-after: avoid;
+}
+
+p {
+  margin: 0 0 8px;
+}
+
+ul,
+ol {
+  margin: 0 0 9px;
+  padding-left: 18px;
+}
+
+li {
+  margin-bottom: 3px;
+}
+
+a {
+  color: #1355c4;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+strong {
+  font-weight: 700;
+}
+
+/* ---- components ---- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 8px 0 12px;
+  font-size: 9.2pt;
+  break-inside: avoid;
+}
+
+th {
+  text-align: left;
+  background: #f1f3f8;
+  font-weight: 700;
+  padding: 6px 8px;
+  border: 1px solid #d8dce6;
+}
+
+td {
+  padding: 6px 8px;
+  border: 1px solid #e4e7ef;
+  vertical-align: top;
+}
+
+td.num,
+th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+pre {
+  background: #f6f7fb;
+  border: 1px solid #e0e4ee;
+  border-radius: 5px;
+  padding: 9px 11px;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  margin: 6px 0 12px;
+  break-inside: avoid;
+}
+
+code {
+  background: #eef0f6;
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+.callout {
+  border-left: 3px solid #1355c4;
+  background: #f4f7fd;
+  padding: 9px 13px;
+  margin: 10px 0 13px;
+  break-inside: avoid;
+}
+
+.callout.warn {
+  border-left-color: #c46a13;
+  background: #fdf7f0;
+}
+
+.callout p:last-child {
+  margin-bottom: 0;
+}
+
+.lead {
+  font-size: 10.8pt;
+  color: #2f3542;
+}
+
+.linkbox {
+  border: 1.5px solid #16181d;
+  border-radius: 6px;
+  padding: 11px 14px;
+  margin: 10px 0 14px;
+  break-inside: avoid;
+}
+
+.linkbox div {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 5px;
+  align-items: baseline;
+}
+
+.linkbox div:last-child {
+  margin-bottom: 0;
+}
+
+.linkbox .k {
+  flex: none;
+  width: 86px;
+  font-weight: 700;
+  font-size: 8.8pt;
+  color: #5b6478;
+}
+
+.pending {
+  background: #fff3cd;
+  border: 1px dashed #c46a13;
+  border-radius: 3px;
+  padding: 1px 6px;
+  color: #8a4a05;
+  font-weight: 700;
+}
+
+figure {
+  margin: 10px 0 14px;
+  break-inside: avoid;
+}
+
+figure img {
+  width: 100%;
+  border: 1px solid #d8dce6;
+  border-radius: 5px;
+  display: block;
+}
+
+figcaption {
+  font-size: 8.4pt;
+  color: #5b6478;
+  margin-top: 5px;
+  line-height: 1.5;
+}
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.pipeline {
+  font-family: 'SF Mono', Menlo, monospace;
+  font-size: 8.2pt;
+  line-height: 1.55;
+  background: #0f1116;
+  color: #e6eaf5;
+  border-radius: 6px;
+  padding: 12px 14px;
+  margin: 10px 0 14px;
+  white-space: pre;
+  overflow-x: auto;
+  break-inside: avoid;
+}
+
+.page-break {
+  break-before: page;
+}
+
+footer {
+  margin-top: 22px;
+  padding-top: 9px;
+  border-top: 1px solid #d8dce6;
+  font-size: 8.2pt;
+  color: #5b6478;
+}

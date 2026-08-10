@@ -123,6 +123,13 @@ export class BoardView {
     return this.fx.length > 0;
   }
 
+  /** Drop all in-flight effects. Used by capture mode, where a whole run is
+   *  played inside one synchronous loop and every effect would otherwise be
+   *  drawn on top of the others at the same timestamp. */
+  clearEffects(): void {
+    this.fx.length = 0;
+  }
+
   private center(cell: number): [number, number] {
     return [
       this.pad + (xOf(cell) + 0.5) * this.cell,

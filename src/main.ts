@@ -7,7 +7,7 @@
 
 import './style.css';
 import { type Move } from './core/grid';
-import { exitClosure } from './ai/solver';
+import { exitClosure, rankMoves } from './ai/solver';
 import { createGame, intensityOf, tap, type GameState } from './game/game';
 import { BoardView } from './ui/render';
 import { DirectorPanel } from './ui/panel';
@@ -219,6 +219,34 @@ function frame(now: number): void {
   requestAnimationFrame(frame);
 }
 
+/* ---------------- capture mode ---------------- */
+
+/**
+ * `?autoplay=N&panel=1` plays N bot taps and opens the panel.
+ *
+ * Exists so documentation screenshots and regression captures show a real
+ * mid-run board produced by the actual engine, rather than a mock-up. It only
+ * ever drives the same `doTap` path a finger would.
+ */
+function runCaptureMode(): void {
+  const params = new URLSearchParams(location.search);
+  const autoplay = Number(params.get('autoplay') ?? 0);
+  if (autoplay > 0) {
+    for (let n = 0; n < autoplay && !game.over; n++) {
+      const ranked = rankMoves(game.grid);
+      if (ranked.length === 0) break;
+      // Play a little below optimal so the board looks like a real game.
+      doTap(ranked[Math.min(ranked.length - 1, n % 3)].move.from);
+    }
+    // The whole run resolved at one timestamp, so every animation would draw
+    // at once. Discard them and show the settled board.
+    view.clearEffects();
+    setHint('');
+  }
+  if (params.get('panel') === '1') setPanel(true);
+}
+
 updateHud();
 setHint('');
+runCaptureMode();
 requestAnimationFrame(frame);
